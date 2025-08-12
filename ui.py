@@ -248,7 +248,10 @@ def main():
     title_col, help_col, _ = st.columns([2, 2, 5])
     
     with title_col:
-        st.title(f"API Tester - {st.session_state.username}")
+        st.markdown(
+            f"<h3 style='margin:0;'>API Tester - {st.session_state.username}</h3>",
+            unsafe_allow_html=True
+        )
     
     with help_col:
         st.write("")  # Add some spacing
