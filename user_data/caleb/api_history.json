@@ -1,5 +1,86 @@
 [
   {
+    "timestamp": "2025-08-13 14:44:06",
+    "name": "Dev populate course",
+    "environment": "DEMO",
+    "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+    "method": "POST",
+    "status_code": 200,
+    "time_ms": 383.32,
+    "config": {
+      "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "method": "POST",
+      "headers": {},
+      "params": {},
+      "body": {
+        "startDate": "2025-08-12T00:00:00.000Z",
+        "isCheckUpdatedAt": true,
+        "isCheckNotProcess": true
+      },
+      "cookies": {
+        "_ga": "GA1.1.379208491.1753342019",
+        "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
+        "CacheUrl": "true",
+        "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQOu3eFD4KxmPHrGbj8Y5o5hRcmk1txDo_LnSvcgWWh_rjIVtDf_IGYFggiaCLTeLX43UlexzWmh-cvMXiHJ-Gpg3SEYx50nFYGwJFfgE5-b8S9TttN-0Ppm5xCwC7WKDa89BbUG52FwFw0cyqMcy8L1RJPF2UR_ascWIpjHpOCdyzMuVkQqI7NQuQ90zUYS05c6wsl4ZiAvCJ3OJE_yIek6XNh84ay-Id034S5R7se9rgbvX43EXcyKth-seLxzYyq9CSywff1BALpdb4bw9YtsiwTddQYwnWJX5tSJoubHaiKuXrIghx0_LAaERz_zFV3EmDxHCmeQBUDbmVlsoE6xPj-IQF036O5dIF9jdThe3VyvvulL2WkuhZ390WW29qx6bk__t9K4bpWQW-Gu7BTxGxpaIqyiZdH2aGwoBwkrSgpltBDza5t0C8lTrSVvLhw3VSNJr3MNx11qaUkbhWdmgU5IjuZcDn-9kEVWyaz8Fep6x9Vkmu9ySaDNWWW63hHwyGg6_vyGI3YtbsKxnUWUEvDFUR6XDQYYbdwsQjlKVYT6e-5gLIH-lISn7dFK0V4MZm71JMq0AJ_7yRpH6WAKGs3MtSOK-w4wT-HHzy8_xDrxOvjXAZIl0j-MISRK6Sh9Q-gNlDfepvLWMuo_BceqXwmMngs5FyChfSuqaiAdolKgWQzw_q-N-Y881QPv3krPtmhtIGsEkVBdZkI-PnqctMTzB5usmQyreOUuB23cYG_LMyrJORQ7w8RU77GKKLJMhVsvTGz_GgTcVurcDnnxBzxtHzYodqUML6042WoD8aZLKWiMJm0ejxL326vefsAfg458nAb5JxqgTTBzTkSvuuBLBODxaJQMaMYDechBLDsfsGGOK3zqDGB_ygPeWCaRqTIOMALAohMzn6WFHTQ7m4XLgpwZhdCXBso9CX_KYy8VjfyCw9lDGS-0v1qD7LW1jj_jKzYK4N5CYp93TF6oBEyMoOm3t45mWTs6NydimV4W61G3EwNmKfgNZKJrnuQJfWCo2B4brFoCTXqRHkIZ3QtzhmaM8ep4uzWMECW81IwZMVfrECjwQs7g2citk_gVjXOHMxul_9xFaHuONKcYtD_GYGAcAWuzZMc3Gvo-eS0yCW3nzqLz20GtEiZVDi_2U8UQ9qNeoW8ryWW1PKOnlVmkzDj6tMbY3hJvJxYg-W7WQWsZPqrmGetOFxKQux36Prx4FCJI6MmsfLx6FL3OVzKgc7lZmzCpX5A3PVIU-_222zUQmrcCZiO1ltlVSvFO8OIISjHCGHe8YBaKnTafAMi821uyVKuuNAXENc9uzclkcX-QkWa2hyBVizeRNiNSEXcV370DY5XxPksVxAfEzdsEDSgV0u6BuSlll1RAqq8IAifaG5GfjqLbUVfyRXzbrHKQhUowX43WbFGL0SZ2EZoxwq9EmE-nFLygEVosovkqh2n1nhpM5Ib31U3Z2Wd2BreiUiUlDO6_qj7vZSbaZGulBsajvUTRVl4Nq2QUXmwGlbK3z6m1uVwhHRhPk3zFxWM-U4YHFFDQ91VxGRmB_HIebsxyO5nCmDDc71z78QLtiNtosXP8SHyXSZMZFZsvHZhJHWsHFkRsq4RE79m3vkJSbbokpu_az9uSo_A4LH24ugyfx4zNk_XbakmDoKZWwYMUMxACcy1OwzX6UEAu-heFsy58tj-KnQ4T4FfYsnBOAbR19JoQMoHZzRLYZd-K5fyEWqY4s1QBSeqeszVmlvlkiEFJzenaFgvV9vrOcze5esnyPkxEE4Gkn4o9tA5Ttm5jzmI5vSgu4wrbxY3pi_bidWLU6PqbDzODzZ2098xXR4b66S3kzKwH39IT2yyxS8yFwqqAvtwFvU1s75rlLWeD3gjnZZuyUlySwFyuMjII8agA7CCOT5VTDVPa1JWXv2e_2UHoGpsqsE8TZZ5ncRjw8Vh6JHUmvl95xEiB4"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-08-13 14:41:06",
+    "name": "Dev populate course",
+    "environment": "DEMO",
+    "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+    "method": "POST",
+    "status_code": 200,
+    "time_ms": 347.28,
+    "config": {
+      "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "method": "POST",
+      "headers": {},
+      "params": {},
+      "body": {
+        "startDate": "2025-08-12T00:00:00.000Z",
+        "isCheckUpdatedAt": true,
+        "isCheckNotProcess": true
+      },
+      "cookies": {
+        "_ga": "GA1.1.379208491.1753342019",
+        "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
+        "CacheUrl": "true",
+        "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQOu3eFD4KxmPHrGbj8Y5o5hRcmk1txDo_LnSvcgWWh_rjIVtDf_IGYFggiaCLTeLX43UlexzWmh-cvMXiHJ-Gpg3SEYx50nFYGwJFfgE5-b8S9TttN-0Ppm5xCwC7WKDa89BbUG52FwFw0cyqMcy8L1RJPF2UR_ascWIpjHpOCdyzMuVkQqI7NQuQ90zUYS05c6wsl4ZiAvCJ3OJE_yIek6XNh84ay-Id034S5R7se9rgbvX43EXcyKth-seLxzYyq9CSywff1BALpdb4bw9YtsiwTddQYwnWJX5tSJoubHaiKuXrIghx0_LAaERz_zFV3EmDxHCmeQBUDbmVlsoE6xPj-IQF036O5dIF9jdThe3VyvvulL2WkuhZ390WW29qx6bk__t9K4bpWQW-Gu7BTxGxpaIqyiZdH2aGwoBwkrSgpltBDza5t0C8lTrSVvLhw3VSNJr3MNx11qaUkbhWdmgU5IjuZcDn-9kEVWyaz8Fep6x9Vkmu9ySaDNWWW63hHwyGg6_vyGI3YtbsKxnUWUEvDFUR6XDQYYbdwsQjlKVYT6e-5gLIH-lISn7dFK0V4MZm71JMq0AJ_7yRpH6WAKGs3MtSOK-w4wT-HHzy8_xDrxOvjXAZIl0j-MISRK6Sh9Q-gNlDfepvLWMuo_BceqXwmMngs5FyChfSuqaiAdolKgWQzw_q-N-Y881QPv3krPtmhtIGsEkVBdZkI-PnqctMTzB5usmQyreOUuB23cYG_LMyrJORQ7w8RU77GKKLJMhVsvTGz_GgTcVurcDnnxBzxtHzYodqUML6042WoD8aZLKWiMJm0ejxL326vefsAfg458nAb5JxqgTTBzTkSvuuBLBODxaJQMaMYDechBLDsfsGGOK3zqDGB_ygPeWCaRqTIOMALAohMzn6WFHTQ7m4XLgpwZhdCXBso9CX_KYy8VjfyCw9lDGS-0v1qD7LW1jj_jKzYK4N5CYp93TF6oBEyMoOm3t45mWTs6NydimV4W61G3EwNmKfgNZKJrnuQJfWCo2B4brFoCTXqRHkIZ3QtzhmaM8ep4uzWMECW81IwZMVfrECjwQs7g2citk_gVjXOHMxul_9xFaHuONKcYtD_GYGAcAWuzZMc3Gvo-eS0yCW3nzqLz20GtEiZVDi_2U8UQ9qNeoW8ryWW1PKOnlVmkzDj6tMbY3hJvJxYg-W7WQWsZPqrmGetOFxKQux36Prx4FCJI6MmsfLx6FL3OVzKgc7lZmzCpX5A3PVIU-_222zUQmrcCZiO1ltlVSvFO8OIISjHCGHe8YBaKnTafAMi821uyVKuuNAXENc9uzclkcX-QkWa2hyBVizeRNiNSEXcV370DY5XxPksVxAfEzdsEDSgV0u6BuSlll1RAqq8IAifaG5GfjqLbUVfyRXzbrHKQhUowX43WbFGL0SZ2EZoxwq9EmE-nFLygEVosovkqh2n1nhpM5Ib31U3Z2Wd2BreiUiUlDO6_qj7vZSbaZGulBsajvUTRVl4Nq2QUXmwGlbK3z6m1uVwhHRhPk3zFxWM-U4YHFFDQ91VxGRmB_HIebsxyO5nCmDDc71z78QLtiNtosXP8SHyXSZMZFZsvHZhJHWsHFkRsq4RE79m3vkJSbbokpu_az9uSo_A4LH24ugyfx4zNk_XbakmDoKZWwYMUMxACcy1OwzX6UEAu-heFsy58tj-KnQ4T4FfYsnBOAbR19JoQMoHZzRLYZd-K5fyEWqY4s1QBSeqeszVmlvlkiEFJzenaFgvV9vrOcze5esnyPkxEE4Gkn4o9tA5Ttm5jzmI5vSgu4wrbxY3pi_bidWLU6PqbDzODzZ2098xXR4b66S3kzKwH39IT2yyxS8yFwqqAvtwFvU1s75rlLWeD3gjnZZuyUlySwFyuMjII8agA7CCOT5VTDVPa1JWXv2e_2UHoGpsqsE8TZZ5ncRjw8Vh6JHUmvl95xEiB4"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-08-13 14:40:49",
+    "name": "Dev populate course",
+    "environment": "DEMO",
+    "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+    "method": "POST",
+    "status_code": 401,
+    "time_ms": 361.61,
+    "config": {
+      "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
+      "method": "POST",
+      "headers": {},
+      "params": {},
+      "body": {
+        "startDate": "2025-08-12T00:00:00.000Z",
+        "isCheckUpdatedAt": true,
+        "isCheckNotProcess": true
+      },
+      "cookies": {
+        "_ga": "GA1.1.379208491.1753342019",
+        "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
+        "CacheUrl": "true",
+        "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQOu3eFD4KxmPHrGbj8Y5o5hRcmk1txDo_LnSvcgWWh_rjIVtDf_IGYFggiaCLTeLX43UlexzWmh-cvMXiHJ-Gpg3SEYx50nFYGwJFfgE5-b8S9TttN-0Ppm5xCwC7WKDa89BbUG52FwFw0cyqMcy8L1RJPF2UR_ascWIpjHpOCdyzMuVkQqI7NQuQ90zUYS05c6wsl4ZiAvCJ3OJE_yIek6XNh84ay-Id034S5R7se9rgbvX43EXcyKth-seLxzYyq9CSywff1BALpdb4bw9YtsiwTddQYwnWJX5tSJoubHaiKuXrIghx0_LAaERz_zFV3EmDxHCmeQBUDbmVlsoE6xPj-IQF036O5dIF9jdThe3VyvvulL2WkuhZ390WW29qx6bk__t9K4bpWQW-Gu7BTxGxpaIqyiZdH2aGwoBwkrSgpltBDza5t0C8lTrSVvLhw3VSNJr3MNx11qaUkbhWdmgU5IjuZcDn-9kEVWyaz8Fep6x9Vkmu9ySaDNWWW63hHwyGg6_vyGI3YtbsKxnUWUEvDFUR6XDQYYbdwsQjlKVYT6e-5gLIH-lISn7dFK0V4MZm71JMq0AJ_7yRpH6WAKGs3MtSOK-w4wT-HHzy8_xDrxOvjXAZIl0j-MISRK6Sh9Q-gNlDfepvLWMuo_BceqXwmMngs5FyChfSuqaiAdolKgWQzw_q-N-Y881QPv3krPtmhtIGsEkVBdZkI-PnqctMTzB5usmQyreOUuB23cYG_LMyrJORQ7w8RU77GKKLJMhVsvTGz_GgTcVurcDnnxBzxtHzYodqUML6042WoD8aZLKWiMJm0ejxL326vefsAfg458nAb5JxqgTTBzTkSvuuBLBODxaJQMaMYDechBLDsfsGGOK3zqDGB_ygPeWCaRqTIOMALAohMzn6WFHTQ7m4XLgpwZhdCXBso9CX_KYy8VjfyCw9lDGS-0v1qD7LW1jj_jKzYK4N5CYp93TF6oBEyMoOm3t45mWTs6NydimV4W61G3EwNmKfgNZKJrnuQJfWCo2B4brFoCTXqRHkIZ3QtzhmaM8ep4uzWMECW81IwZMVfrECjwQs7g2citk_gVjXOHMxul_9xFaHuONKcYtD_GYGAcAWuzZMc3Gvo-eS0yCW3nzqLz20GtEiZVDi_2U8UQ9qNeoW8ryWW1PKOnlVmkzDj6tMbY3hJvJxYg-W7WQWsZPqrmGetOFxKQux36Prx4FCJI6MmsfLx6FL3OVzKgc7lZmzCpX5A3PVIU-_222zUQmrcCZiO1ltlVSvFO8OIISjHCGHe8YBaKnTafAMi821uyVKuuNAXENc9uzclkcX-QkWa2hyBVizeRNiNSEXcV370DY5XxPksVxAfEzdsEDSgV0u6BuSlll1RAqq8IAifaG5GfjqLbUVfyRXzbrHKQhUowX43WbFGL0SZ2EZoxwq9EmE-nFLygEVosovkqh2n1nhpM5Ib31U3Z2Wd2BreiUiUlDO6_qj7vZSbaZGulBsajvUTRVl4Nq2QUXmwGlbK3z6m1uVwhHRhPk3zFxWM-U4YHFFDQ91VxGRmB_HIebsxyO5nCmDDc71z78QLtiNtosXP8SHyXSZMZFZsvHZhJHWsHFkRsq4RE79m3vkJSbbokpu_az9uSo_A4LH24ugyfx4zNk_XbakmDoKZWwYMUMxACcy1OwzX6UEAu-heFsy58tj-KnQ4T4FfYsnBOAbR19JoQMoHZzRLYZd-K5fyEWqY4s1QBSeqeszVmlvlkiEFJzenaFgvV9vrOcze5esnyPkxEE4Gkn4o9tA5Ttm5jzmI5vSgu4wrbxY3pi_bidWLU6PqbDzODzZ2098xXR4b66S3kzKwH39IT2yyxS8yFwqqAvtwFvU1s75rlLWeD3gjnZZuyUlySwFyuMjII8agA7CCOT5VTDVPa1JWXv2e_2UHoGpsqsE8TZZ5ncRjw8Vh6JHUmvl95xEiB4"
+      }
+    }
+  },
+  {
     "timestamp": "2025-08-11 15:44:35",
     "name": "SE3 SIT",
     "environment": "SIT",
