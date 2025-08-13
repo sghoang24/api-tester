@@ -24,7 +24,10 @@ from utils import (
     create_history_entry,
     get_existing_users,
     validate_username,
-    ensure_path_format
+    ensure_path_format,
+    load_environments_config,
+    save_environments_config,
+    get_enabled_environments
 )
 
 
@@ -76,60 +79,98 @@ def save_to_predefined(api_name, api, file_paths):
         st.error("Failed to save to predefined configurations")
 
 
-def show_login_page():
-    """Display the login page for user selection/creation"""
-    # Create a layout with title and help button
-    title_col, help_col, _ = st.columns([2, 2, 6])
+def show_multi_user_login():
+    """Display the multi-user login page"""
+    # Help button above title
+    if st.button("📖 Hướng dẫn", key="login_help", help="Xem hướng dẫn sử dụng ứng dụng"):
+        show_help_dialog()
+    
+    # Title
+    st.title("API Client Tester")
 
-    with title_col:
-        st.title("HTTP Client - Login")
+    # Initialize logged in users if not exists
+    if 'logged_in_users' not in st.session_state:
+        st.session_state.logged_in_users = {}
+    if 'active_user' not in st.session_state:
+        st.session_state.active_user = None
 
-    with help_col:
-        st.write("")  # Add some spacing
-        st.write("")  # Add some spacing
-        if st.button("📖 Hướng dẫn", key="login_help", help="Xem hướng dẫn sử dụng ứng dụng"):
-            show_help_dialog()
+    # Show currently logged in users
+    if st.session_state.logged_in_users:
+        st.subheader("Currently Logged In Users")
+        cols = st.columns(len(st.session_state.logged_in_users) + 1)
+        
+        for i, (username, user_data) in enumerate(st.session_state.logged_in_users.items()):
+            with cols[i]:
+                is_active = st.session_state.active_user == username
+                user_type = "Admin" if user_data.get('is_admin', False) else "User"
+                status = "🟢 Active" if is_active else "⚫ Inactive"
+                
+                st.write(f"**{username}** ({user_type})")
+                st.write(status)
+                
+                if not is_active:
+                    if st.button(f"Switch to {username}", key=f"switch_{username}"):
+                        st.session_state.active_user = username
+                        _load_user_data(username)
+                        st.rerun()
+                
+                if st.button(f"Logout {username}", key=f"logout_{username}"):
+                    _logout_user(username)
+                    st.rerun()
+
+        # Add separator
+        st.markdown("---")
+
+        # Add New User button
+        if st.button("➕ Add New User"):
+            st.session_state.show_main_app = False
+            st.rerun()
 
     # Get list of existing users
     user_dir = os.path.join(os.path.dirname(__file__), "user_data")
     if not os.path.exists(user_dir):
         os.makedirs(user_dir)
 
-    # Get existing users but exclude adminadmin from the regular user list
+    # Get existing users but exclude already logged in users
     existing_users = get_existing_users()
+    available_users = [u for u in existing_users if u not in st.session_state.logged_in_users]
 
     # Login options
     login_option = st.radio("Login Option", ["Existing User", "New User", "Admin Login"])
-    
+
     if login_option == "Existing User":
-        if existing_users:
-            username = st.selectbox("Select Username", existing_users)
+        if available_users:
+            username = st.selectbox("Select Username", available_users)
             login_button = st.button("Login")
-            
+
             if login_button:
-                _handle_user_login(username, False)
+                _handle_multi_user_login(username, False)
         else:
-            st.info("No regular users found. Create a new user or use Admin Login.")
-    
+            st.info("No available users to add. All existing users are already logged in.")
+
     elif login_option == "Admin Login":
-        st.subheader("Administrator Login")
-        admin_password = st.text_input("Password", type="password", placeholder="Enter admin password")
-        admin_login_button = st.button("Admin Login")
-        
-        if admin_login_button:
-            if admin_password == "adminadmin":
-                _handle_user_login("adminadmin", True)
-                st.success("Logged in as Administrator")
-                st.rerun()
-            else:
-                st.error("Invalid admin password")
-    
+        if "adminadmin" not in st.session_state.logged_in_users:
+            st.subheader("Administrator Login")
+            admin_password = st.text_input("Password", type="password", placeholder="Enter admin password")
+            admin_login_button = st.button("Add Admin")
+
+            if admin_login_button:
+                if admin_password == "adminadmin":
+                    _handle_multi_user_login("adminadmin", True)
+                    st.success("Administrator added to session")
+                    st.rerun()
+                else:
+                    st.error("Invalid admin password")
+        else:
+            st.info("Administrator is already logged in.")
+
     else:  # New User
         new_username = st.text_input("Enter New Username")
-        create_button = st.button("Create User")
-        
+        create_button = st.button("Create and Add User")
+
         if create_button and new_username:
-            error_msg = validate_username(new_username, existing_users)
+            all_users = list(st.session_state.logged_in_users.keys()) + existing_users
+            error_msg = validate_username(new_username, all_users)
             if error_msg:
                 st.error(error_msg)
             else:
@@ -137,177 +178,375 @@ def show_login_page():
                 new_user_dir = os.path.join(user_dir, new_username)
                 if not os.path.exists(new_user_dir):
                     os.makedirs(new_user_dir)
-                
-                _handle_user_login(new_username, False)
-                st.success(f"User {new_username} created and logged in")
+
+                _handle_multi_user_login(new_username, False)
+                st.success(f"User {new_username} created and added to session")
                 st.rerun()
 
+    # Button to proceed to main app
+    if st.session_state.logged_in_users:
+        if st.button("🚀 Start Using API Tester", type="primary"):
+            if not st.session_state.active_user:
+                # Set first user as active if none selected
+                st.session_state.active_user = list(st.session_state.logged_in_users.keys())[0]
+                _load_user_data(st.session_state.active_user)
 
-def _handle_user_login(username: str, is_admin: bool):
-    """Handle user login setup"""
-    st.session_state.username = username
-    st.session_state.logged_in = True
-    st.session_state.is_admin = is_admin
-    
-    # Initialize file paths
-    user_paths = get_user_specific_paths(username)
-    st.session_state.file_paths = user_paths
-    
-    # Load user's saved APIs
-    try:
-        st.session_state.apis = load_user_apis(user_paths["USER_APIS_FILE"])
-    except Exception as e:
-        st.error(f"Error loading user APIs: {str(e)}")
-        st.session_state.apis = {}
-    
+            st.session_state.show_main_app = True
+            st.rerun()
+
+
+def _handle_multi_user_login(username: str, is_admin: bool):
+    """Handle multi-user login setup"""
+    # Add user to logged in users
+    st.session_state.logged_in_users[username] = {
+        'is_admin': is_admin,
+        'file_paths': get_user_specific_paths(username),
+        'apis': {},
+        'api_responses': {},
+        'current_env': "SIT",
+        'api_history': [],
+        'cookies_config': {}
+    }
+
+    # Set as active user if it's the first one or if no active user
+    if not st.session_state.active_user or len(st.session_state.logged_in_users) == 1:
+        st.session_state.active_user = username
+        _load_user_data(username)
+
     if not is_admin:
-        st.success(f"Logged in as {username}")
-        st.rerun()
+        st.success(f"User {username} added to session")
+
+
+def _load_user_data(username: str):
+    """Load data for the specified user and set as active"""
+    if username not in st.session_state.logged_in_users:
+        return
+
+    user_data = st.session_state.logged_in_users[username]
+
+    # Set current user context
+    st.session_state.username = username
+    st.session_state.is_admin = user_data['is_admin']
+    st.session_state.file_paths = user_data['file_paths']
+
+    # Load user's saved data if not already loaded
+    if not user_data['apis']:
+        try:
+            user_data['apis'] = load_user_apis(user_data['file_paths']["USER_APIS_FILE"])
+        except Exception as e:
+            st.error(f"Error loading user APIs for {username}: {str(e)}")
+            user_data['apis'] = {}
+
+    if not user_data['api_history']:
+        user_data['api_history'] = load_api_history(user_data['file_paths']["API_HISTORY_FILE"])
+
+    if not user_data['cookies_config']:
+        user_data['cookies_config'] = load_cookies_config(
+            user_data['file_paths']["COOKIES_CONFIG_FILE"],
+            ADMIN_COOKIES_FILE
+        )
+
+    # Set session state to current user's data
+    st.session_state.apis = user_data['apis']
+    st.session_state.api_responses = user_data['api_responses']
+    st.session_state.current_env = user_data['current_env']
+    st.session_state.api_history = user_data['api_history']
+    st.session_state.cookies_config = user_data['cookies_config']
+
+
+def _logout_user(username: str):
+    """Logout a specific user"""
+    if username in st.session_state.logged_in_users:
+        # Save user's data before removing
+        user_data = st.session_state.logged_in_users[username]
+        if user_data['apis']:
+            save_user_apis(user_data['apis'], user_data['file_paths']["USER_APIS_FILE"])
+
+        # Remove user from logged in users
+        del st.session_state.logged_in_users[username]
+
+        # If this was the active user, switch to another user or clear session
+        if st.session_state.active_user == username:
+            if st.session_state.logged_in_users:
+                # Switch to first available user
+                new_active_user = list(st.session_state.logged_in_users.keys())[0]
+                st.session_state.active_user = new_active_user
+                _load_user_data(new_active_user)
+            else:
+                # No users left, clear session
+                st.session_state.active_user = None
+                st.session_state.show_main_app = False
+                for key in ['username', 'is_admin', 'file_paths', 'apis', 'api_responses', 
+                           'current_env', 'api_history', 'cookies_config']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+
+
+def _save_current_user_data():
+    """Save current user's data back to the logged_in_users dict"""
+    if st.session_state.active_user and st.session_state.active_user in st.session_state.logged_in_users:
+        user_data = st.session_state.logged_in_users[st.session_state.active_user]
+        user_data['apis'] = st.session_state.get('apis', {})
+        user_data['api_responses'] = st.session_state.get('api_responses', {})
+        user_data['current_env'] = st.session_state.get('current_env', 'SIT')
+        user_data['api_history'] = st.session_state.get('api_history', [])
+        user_data['cookies_config'] = st.session_state.get('cookies_config', {})
 
 def show_admin_panel():
-    """Display admin panel for global cookie configuration"""
+    """Display admin panel for global environment and cookie configuration"""
     if not st.session_state.get("is_admin", False):
         st.warning("Admin access required")
         return
-    
-    st.title("Admin Panel - Global Cookie Configuration")
-    
-    # Load admin cookies
-    admin_cookies = {}
-    if os.path.exists(ADMIN_COOKIES_FILE):
-        try:
-            admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
-        except Exception:
-            admin_cookies = {}
-    
-    st.info("Configure global cookies that will be used by all users unless they override them.")
-    
-    # Environment tabs for cookie configuration
-    env_tabs = st.tabs(["SIT", "DAI", "UAT"])
 
-    for i, env in enumerate(["SIT", "DAI", "UAT"]):
-        with env_tabs[i]:
-            st.subheader(f"{env} Environment Cookies")
+    st.title("Admin Panel - Environment & Cookie Management")
+
+    # Load environments configuration
+    environments = load_environments_config()
+    
+    # Create tabs for different admin functions
+    env_tab, cookie_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration"])
+    
+    with env_tab:
+        st.subheader("Environment Management")
+        st.info("Manage environments that will be available to all users.")
+        
+        # Display existing environments
+        st.write("**Current Environments:**")
+        for env_name, config in environments.items():
+            col1, col2, col3, col4 = st.columns([2, 4, 2, 1])
             
-            # Get current cookies
-            env_cookies_string = admin_cookies.get(env, "")
+            with col1:
+                status = "🟢 Enabled" if config.get('enabled', True) else "🔴 Disabled"
+                st.write(f"**{env_name}**")
+                st.write(status)
             
-            # Display as editable text area
-            cookies_string = st.text_area(
-                f"Edit cookies for {env} (format: name1=value1; name2=value2)",
-                value=env_cookies_string,
-                height=150,
-                key=f"admin_cookies_{env}"
-            )
+            with col2:
+                st.text(config.get('base_url', ''))
             
-            # Save button for this environment
-            if st.button(f"Save {env} Cookies", key=f"save_admin_{env}"):
-                admin_cookies[env] = cookies_string
-                if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
-                    st.success(f"Global cookies for {env} saved successfully!")
+            with col3:
+                # Toggle enable/disable
+                current_status = config.get('enabled', True)
+                if st.button(f"{'Disable' if current_status else 'Enable'}", key=f"toggle_{env_name}"):
+                    environments[env_name]['enabled'] = not current_status
+                    if save_environments_config(environments):
+                        st.success(f"Environment {env_name} {'disabled' if current_status else 'enabled'}")
+                        st.rerun()
+                    else:
+                        st.error("Failed to update environment")
+            
+            with col4:
+                # Delete environment (except core ones)
+                if env_name not in ['SIT', 'DAI', 'UAT']:
+                    if st.button("🗑️", key=f"delete_{env_name}", help="Delete environment"):
+                        del environments[env_name]
+                        if save_environments_config(environments):
+                            st.success(f"Environment {env_name} deleted")
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete environment")
+        
+        st.markdown("---")
+        
+        # Add new environment
+        st.subheader("Add New Environment")
+        with st.form("add_environment_form"):
+            new_env_name = st.text_input("Environment Name", help="e.g., PROD, DEV, STAGING")
+            new_env_url = st.text_input("Base URL", help="e.g., https://api.example.com/v1")
+            new_env_cookies = st.text_area("Default Cookies", help="Optional default cookies for this environment")
+            
+            submitted = st.form_submit_button("Add Environment")
+            
+            if submitted:
+                if not new_env_name or not new_env_url:
+                    st.error("Environment name and base URL are required")
+                elif new_env_name.upper() in environments:
+                    st.error(f"Environment {new_env_name.upper()} already exists")
                 else:
-                    st.error(f"Failed to save cookies for {env}")
+                    # Add new environment
+                    environments[new_env_name.upper()] = {
+                        "name": new_env_name.upper(),
+                        "base_url": new_env_url,
+                        "default_cookies": new_env_cookies,
+                        "enabled": True
+                    }
+                    
+                    if save_environments_config(environments):
+                        st.success(f"Environment {new_env_name.upper()} added successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to add environment")
     
-    # Reset to defaults button
-    if st.button("Reset All to Defaults"):
-        admin_cookies = {
-            "SIT": SIT_COOKIES,
-            "DAI": DAI_COOKIES,
-            "UAT": UAT_COOKIES
-        }
-        if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
-            st.success("All environments reset to default cookies")
+    with cookie_tab:
+        st.subheader("Global Cookie Configuration")
+        st.info("Configure global cookies that will be used by all users unless they override them.")
+        
+        # Load admin cookies
+        admin_cookies = {}
+        if os.path.exists(ADMIN_COOKIES_FILE):
+            try:
+                admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+            except Exception:
+                admin_cookies = {}
+
+        # Get enabled environments for cookie configuration
+        enabled_envs = get_enabled_environments()
+        
+        if enabled_envs:
+            # Create tabs for each enabled environment
+            env_tabs = st.tabs(enabled_envs)
+
+            for i, env in enumerate(enabled_envs):
+                with env_tabs[i]:
+                    st.subheader(f"{env} Environment Cookies")
+                    
+                    # Get current cookies (from admin file or environment default)
+                    env_cookies_string = admin_cookies.get(env, "")
+                    if not env_cookies_string and env in environments:
+                        env_cookies_string = environments[env].get('default_cookies', '')
+                    
+                    # Display as editable text area
+                    cookies_string = st.text_area(
+                        f"Edit cookies for {env} (format: name1=value1; name2=value2)",
+                        value=env_cookies_string,
+                        height=150,
+                        key=f"admin_cookies_{env}"
+                    )
+                    
+                    # Save button for this environment
+                    if st.button(f"Save {env} Cookies", key=f"save_admin_{env}"):
+                        admin_cookies[env] = cookies_string
+                        if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
+                            st.success(f"Global cookies for {env} saved successfully!")
+                        else:
+                            st.error(f"Failed to save cookies for {env}")
+
+            # Reset to defaults button
+            if st.button("Reset All to Environment Defaults"):
+                admin_cookies = {}
+                for env in enabled_envs:
+                    if env in environments:
+                        admin_cookies[env] = environments[env].get('default_cookies', '')
+                
+                if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
+                    st.success("All environments reset to default cookies")
+                else:
+                    st.error("Failed to reset cookies")
+                st.rerun()
         else:
-            st.error("Failed to reset cookies")
-        st.rerun()
-    
+            st.warning("No enabled environments found. Please enable at least one environment in the Environment Management tab.")
+
     if st.button("Back to API Tester"):
         st.session_state.admin_mode = False
         st.rerun()
-
-
 def main():
-    # Initialize login state if not present
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-    
-    # Show login page if not logged in
-    if not st.session_state.logged_in:
-        show_login_page()
+    """Main."""
+    # Initialize session state
+    if "logged_in_users" not in st.session_state:
+        st.session_state.logged_in_users = {}
+    if "active_user" not in st.session_state:
+        st.session_state.active_user = None
+    if "show_main_app" not in st.session_state:
+        st.session_state.show_main_app = False
+
+    # Show login page if no users are logged in or main app not started
+    if not st.session_state.logged_in_users or not st.session_state.show_main_app:
+        show_multi_user_login()
         return
-    
+
     # Check if admin mode is active
-    if st.session_state.get("is_admin", False) and st.session_state.get("admin_mode", False):
+    if (st.session_state.get("is_admin", False) and 
+        st.session_state.get("admin_mode", False)):
         show_admin_panel()
         return
-    
+
+    # Save current user data before any operations
+    _save_current_user_data()
+
     # Get file paths for current user
     file_paths = st.session_state.file_paths
 
-    # Create a layout with title and help button
-    title_col, help_col, _ = st.columns([2, 2, 5])
-    
+    # Help button above title
+    if st.button("📖 Hướng dẫn", help="Xem hướng dẫn sử dụng ứng dụng"):
+        show_help_dialog()
+
+    # Create a layout with title and user switcher
+    title_col, user_col, _ = st.columns([2, 3, 3])
+
     with title_col:
         st.markdown(
             f"<h3 style='margin:0;'>API Tester - {st.session_state.username}</h3>",
             unsafe_allow_html=True
         )
-    
-    with help_col:
-        st.write("")  # Add some spacing
-        st.write("")  # Add some spacing
-        if st.button("📖 Hướng dẫn", help="Xem hướng dẫn sử dụng ứng dụng"):
-            show_help_dialog()
 
-    # Initialize session state
-    if 'apis' not in st.session_state:
-        st.session_state.apis = {}
+    with user_col:
+        # User switcher dropdown
+        user_options = list(st.session_state.logged_in_users.keys())
+        current_index = user_options.index(st.session_state.active_user) if st.session_state.active_user in user_options else 0
+
+        selected_user = st.selectbox(
+            "Switch User",
+            user_options,
+            index=current_index,
+            key="user_switcher"
+        )
+
+        if selected_user != st.session_state.active_user:
+            st.session_state.active_user = selected_user
+            _load_user_data(selected_user)
+            st.rerun()
+
+    # Initialize session state for current user
     if 'api_responses' not in st.session_state:
         st.session_state.api_responses = {}
     if 'current_env' not in st.session_state:
         st.session_state.current_env = "SIT"
-    if 'api_history' not in st.session_state:
-        st.session_state.api_history = load_api_history(file_paths["API_HISTORY_FILE"])
-    if 'cookies_config' not in st.session_state:
-        st.session_state.cookies_config = load_cookies_config(
-            file_paths["COOKIES_CONFIG_FILE"], 
-            ADMIN_COOKIES_FILE
-        )
-    
-    # Admin options in sidebar
+
+    # Admin options and logout in sidebar
+    st.sidebar.markdown(f"**Active User:** {st.session_state.username}")
+
     if st.session_state.get("is_admin", False):
         if st.sidebar.button("Admin Panel"):
             st.session_state.admin_mode = True
             st.rerun()
+
+    # Individual user logout
+    if st.sidebar.button(f"🚪 Logout {st.session_state.username}"):
+        _logout_user(st.session_state.username)
+        st.rerun()
+
+    # Environment selector - use enabled environments
+    enabled_envs = get_enabled_environments()
+    current_env_index = 0
     
-    # Logout button in sidebar
-    if st.sidebar.button("Logout"):
-        # Save user's APIs before logging out
-        if 'apis' in st.session_state and 'file_paths' in st.session_state:
-            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+    if st.session_state.current_env in enabled_envs:
+        current_env_index = enabled_envs.index(st.session_state.current_env)
+    elif enabled_envs:
+        # If current env is not available, default to first enabled env
+        st.session_state.current_env = enabled_envs[0]
+        current_env_index = 0
+    
+    if enabled_envs:
+        env = st.sidebar.selectbox(
+            "Environment", 
+            enabled_envs,
+            index=current_env_index
+        )
+        
+        if env != st.session_state.current_env:
+            st.session_state.current_env = env
+            # Update current user's environment
+            if st.session_state.active_user in st.session_state.logged_in_users:
+                st.session_state.logged_in_users[st.session_state.active_user]['current_env'] = env
 
-        # Clear session state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+            # Update URLs for all APIs to use the new environment's base URL
+            for api_name in st.session_state.apis:
+                if "path" in st.session_state.apis[api_name]:
+                    path = st.session_state.apis[api_name]["path"]
+                    st.session_state.apis[api_name]["url"] = f"{get_current_base_url(env)}{path}"
 
-        st.rerun()
-
-    # Environment selector
-    env = st.sidebar.selectbox(
-        "Environment", 
-        ["SIT", "DAI", "UAT"],
-        index=["SIT", "DAI", "UAT"].index(st.session_state.current_env)
-    )
-    if env != st.session_state.current_env:
-        st.session_state.current_env = env
-
-        # Update URLs for all APIs to use the new environment's base URL
-        for api_name in st.session_state.apis:
-            if "path" in st.session_state.apis[api_name]:
-                path = st.session_state.apis[api_name]["path"]
-                st.session_state.apis[api_name]["url"] = f"{get_current_base_url(env)}{path}"
-
-        st.rerun()
+            st.rerun()
+    else:
+        st.sidebar.warning("No environments enabled. Contact admin.")
 
     # Show current base URL
     st.sidebar.info(f"Base URL: {get_current_base_url(st.session_state.current_env)}")
@@ -344,60 +583,60 @@ def main():
             }
             </style>
             """, unsafe_allow_html=True)
-            
+
             # Create scrollable area
             with api_list_container:
                 st.markdown('<div class="api-list">', unsafe_allow_html=True)
-                
+
                 # Display each API with open, rename and delete buttons
                 for api_name in list(st.session_state.apis.keys()):  # Use list to avoid dictionary size change during iteration
                     cols = st.columns([3, 1, 1, 1])
-                    
+
                     # Display API name
                     cols[0].write(api_name)
-                    
+
                     # Open button
                     if cols[1].button("🔍", key=f"open_{api_name}"):
                         st.session_state.current_api = api_name
                         st.rerun()
-                    
+
                     # Rename button
                     if cols[2].button("✏️", key=f"rename_{api_name}"):
                         # Show rename form
                         st.session_state[f"rename_mode_{api_name}"] = True
                         st.rerun()
-                    
+
                     # Delete button
                     if cols[3].button("🗑️", key=f"del_{api_name}"):
                         # Delete the API
                         del st.session_state.apis[api_name]
-                        
+
                         # Also delete any associated response
                         if api_name in st.session_state.api_responses:
                             del st.session_state.api_responses[api_name]
-                        
+
                         # Update current_api if needed
                         if 'current_api' in st.session_state and st.session_state.current_api == api_name:
                             if st.session_state.apis:
                                 st.session_state.current_api = next(iter(st.session_state.apis))
                             else:
                                 del st.session_state.current_api
-                        
+
                         # Save the updated APIs to file
                         save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
-                        
+
                         st.success(f"Deleted API: {api_name}")
                         st.rerun()
-                    
+
                     # Show rename form if in rename mode
                     if st.session_state.get(f"rename_mode_{api_name}", False):
                         with st.form(key=f"rename_form_{api_name}"):
                             new_name = st.text_input("New name", value=api_name)
-                            
+
                             rename_cols = st.columns(2)
                             rename_submit = rename_cols[0].form_submit_button("Save")
                             rename_cancel = rename_cols[1].form_submit_button("Cancel")
-                            
+
                             if rename_submit and new_name:
                                 if new_name != api_name:
                                     if new_name in st.session_state.apis:
@@ -405,44 +644,41 @@ def main():
                                     else:
                                         # Create a copy of the API with the new name
                                         st.session_state.apis[new_name] = st.session_state.apis[api_name].copy()
-                                        
+
                                         # Copy response data if exists
                                         if api_name in st.session_state.api_responses:
                                             st.session_state.api_responses[new_name] = st.session_state.api_responses[api_name]
-                                        
+
                                         # Delete old API
                                         del st.session_state.apis[api_name]
-                                        
+
                                         # Update current_api if needed
                                         if 'current_api' in st.session_state and st.session_state.current_api == api_name:
                                             st.session_state.current_api = new_name
-                                        
+
                                         # Save updated APIs to file
                                         save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
-                                        
+
                                         st.success(f"Renamed '{api_name}' to '{new_name}'")
-                                        
+
                                         # Reset rename mode
                                         del st.session_state[f"rename_mode_{api_name}"]
                                         st.rerun()
-                            
+
                             if rename_cancel:
                                 # Reset rename mode
                                 del st.session_state[f"rename_mode_{api_name}"]
                                 st.rerun()
-                    
+
                     # Add a separator line
                     st.markdown("---")
-                
+
                 st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("No APIs added yet. Add one above or load from predefined tests.")
-    
+
     with col2:
         if 'current_api' in st.session_state:
-            # Check if current API is a temporary one
-            # if st.session_state.current_api.endswith(" (preview)") and "temp_predefined_api" in st.session_state:
-            #     display_api_tester(st.session_state.current_api, file_paths)
             if st.session_state.current_api in st.session_state.apis:
                 display_api_tester(st.session_state.current_api, file_paths)
             else:
@@ -457,7 +693,7 @@ def manage_cookies(file_path):
     
     # Get current environment cookies string
     env_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
-    
+
     # Display as editable text area with string format
     cookies_string = st.text_area(
         "Edit cookies (format: name1=value1; name2=value2)",
@@ -465,18 +701,19 @@ def manage_cookies(file_path):
         height=150,
         help="Enter cookies in standard format: name1=value1; name2=value2"
     )
-    
+
     # Save button
     if st.button("Save Cookies"):
         # Save the cookies string
         st.session_state.cookies_config[st.session_state.current_env] = cookies_string
-        
-        # Save to file
+
+        # Save to file and update user data
         if save_cookies_config(st.session_state.cookies_config, file_path):
+            _save_current_user_data()  # Update the logged_in_users dict
             st.success(f"Cookies for {st.session_state.current_env} saved successfully!")
         else:
             st.error("Failed to save cookies configuration")
-    
+
     # Reset to admin defaults button
     if st.button("Reset to Admin Defaults"):
         # Load admin cookies
@@ -490,21 +727,29 @@ def manage_cookies(file_path):
         if st.session_state.current_env in admin_cookies:
             st.session_state.cookies_config[st.session_state.current_env] = admin_cookies[st.session_state.current_env]
         else:
-            # Fallback to constants
-            if st.session_state.current_env == "DAI":
-                st.session_state.cookies_config[st.session_state.current_env] = DAI_COOKIES
-            elif st.session_state.current_env == "SIT":
-                st.session_state.cookies_config[st.session_state.current_env] = SIT_COOKIES
-            else:  # UAT
-                st.session_state.cookies_config[st.session_state.current_env] = UAT_COOKIES
+            # Fallback to environment default cookies
+            environments = load_environments_config()
+            if st.session_state.current_env in environments:
+                default_cookies = environments[st.session_state.current_env].get('default_cookies', '')
+                st.session_state.cookies_config[st.session_state.current_env] = default_cookies
+            else:
+                # Final fallback to constants
+                if st.session_state.current_env == "DAI":
+                    st.session_state.cookies_config[st.session_state.current_env] = DAI_COOKIES
+                elif st.session_state.current_env == "SIT":
+                    st.session_state.cookies_config[st.session_state.current_env] = SIT_COOKIES
+                elif st.session_state.current_env == "UAT":
+                    st.session_state.cookies_config[st.session_state.current_env] = UAT_COOKIES
+                else:
+                    st.session_state.cookies_config[st.session_state.current_env] = ""
         
-        # Save to file
+        # Save to file and update user data
         save_cookies_config(st.session_state.cookies_config, file_path)
+        _save_current_user_data()
         st.success(f"Cookies for {st.session_state.current_env} reset to admin defaults")
         st.rerun()
-
-
 def add_new_api():
+    """Add new API."""
     with st.form("add_api_form"):
         api_name = st.text_input("API Name")
         
@@ -513,17 +758,17 @@ def add_new_api():
             "API Path (starts with /)", 
             help="Enter the API path starting with a slash (e.g., /subjectcomponent/list)"
         )
-        
+
         method = st.selectbox("HTTP Method", ["GET", "POST", "PUT", "DELETE", "PATCH"])
-        
+
         submitted = st.form_submit_button("Add API")
         if submitted and api_name and api_path:
             # Ensure path starts with a slash
             api_path = ensure_path_format(api_path)
-            
+
             # Combine base URL with path
             api_url = f"{get_current_base_url(st.session_state.current_env)}{api_path}"
-            
+
             st.session_state.apis[api_name] = {
                 "url": api_url,
                 "path": api_path,  # Store the path separately
@@ -533,6 +778,11 @@ def add_new_api():
                 "body": {}
             }
             st.session_state.current_api = api_name
+
+            # Save to file and update user data
+            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+            _save_current_user_data()
+
             st.success(f"API '{api_name}' added successfully!")
 
 
@@ -540,11 +790,11 @@ def load_predefined_api(file_path):
     """Load predefined API for viewing without saving to user list"""
     # Load predefined API tests from JSON file
     predefined_configs = load_api_configs(file_path)
-    
+
     if not predefined_configs:
         st.warning("No predefined API configurations found")
         return
-    
+
     # Create a dropdown for predefined APIs
     selected_api = st.selectbox(
         "Select Predefined API Test",
@@ -786,8 +1036,9 @@ def _handle_save_button(api_name, api, file_paths, is_temp):
                     # Update current API reference
                     st.session_state.current_api = new_api_name
 
-                    # Save to file
+                    # Save to file and update user data
                     if save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"]):
+                        _save_current_user_data()  # Update the logged_in_users dict
                         st.success(f"API configuration saved as '{new_api_name}'")
                     else:
                         st.error("Failed to save API configuration")
@@ -799,8 +1050,9 @@ def _handle_save_button(api_name, api, file_paths, is_temp):
         # Direct save for non-temporary APIs
         st.session_state.apis[api_name] = api.copy()
 
-        # Save to user's file
+        # Save to user's file and update user data
         if save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"]):
+            _save_current_user_data()  # Update the logged_in_users dict
             st.success("API configuration updated")
         else:
             st.error("Failed to update API configuration")
@@ -826,6 +1078,9 @@ def _handle_send_button(api_name, api, file_paths):
             # Save to history
             _save_to_history(api_name, api, st.session_state.api_responses[api_name], file_paths["API_HISTORY_FILE"])
 
+            # Update user data
+            _save_current_user_data()
+
             # Display success message
             st.success(f"Request completed in {st.session_state.api_responses[api_name]['time']} ms")
 
@@ -843,8 +1098,9 @@ def _handle_delete_button(api_name, file_paths):
     if 'current_api' in st.session_state:
         del st.session_state.current_api
 
-    # Save updated APIs to file
+    # Save updated APIs to file and update user data
     if save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"]):
+        _save_current_user_data()  # Update the logged_in_users dict
         st.success(f"API '{api_name}' deleted successfully")
     else:
         st.error("Failed to delete API")
@@ -894,6 +1150,9 @@ def _save_to_history(api_name, api_config, response, file_path):
 
     # Save history to file
     save_api_history(st.session_state.api_history, file_path)
+
+    # Update user data
+    _save_current_user_data()
 
 
 def display_api_tester(api_name, file_paths):
@@ -963,9 +1222,10 @@ def display_api_tester(api_name, file_paths):
 
 
 def show_history():
-    """Display API call history in sidebar"""
-    if 'api_history' in st.session_state and st.session_state.api_history:
-        st.sidebar.subheader("API Call History")
+    """Display API call history in sidebar for current user"""
+    if ('api_history' in st.session_state and st.session_state.api_history and 
+        st.session_state.get('show_main_app', False)):
+        st.sidebar.subheader(f"API History ({st.session_state.username})")
 
         # Create a dataframe for display
         history_df = pd.DataFrame([
@@ -1004,12 +1264,17 @@ def show_history():
 
                 st.session_state.apis[api_name] = config
                 st.session_state.current_api = api_name
+
+                # Save and update user data
+                save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+                _save_current_user_data()
                 st.rerun()
 
         # Clear history option
         if st.sidebar.button("Clear History"):
             st.session_state.api_history = []
             if save_api_history([], st.session_state.file_paths["API_HISTORY_FILE"]):
+                _save_current_user_data()
                 st.sidebar.success("History cleared!")
             else:
                 st.sidebar.error("Failed to clear history")
@@ -1017,10 +1282,13 @@ def show_history():
 
 
 if __name__ == "__main__":
-    st.set_page_config(page_title="Client API Tester", layout="wide")
+    st.set_page_config(
+        page_title="API Tester",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
 
-    # Only show history if logged in
-    if "logged_in" in st.session_state and st.session_state.logged_in:
-        show_history()
+    # Always show history for logged in users
+    show_history()
 
     main()

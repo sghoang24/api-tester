@@ -23,12 +23,61 @@ def get_base_url(env: str) -> str:
 
 def get_current_base_url(current_env: str) -> str:
     """Get the base URL for the current environment"""
+    environments = load_environments_config()
+    if current_env in environments and environments[current_env].get('enabled', True):
+        return environments[current_env]['base_url']
+
+    # Fallback to constants for backward compatibility
     if current_env == "DAI":
         return DAI_BASE_URL
     elif current_env == "SIT":
         return SIT_BASE_URL
     else:  # UAT
         return UAT_BASE_URL
+
+
+def load_environments_config() -> Dict[str, Any]:
+    """Load environments configuration from JSON file"""
+    try:
+        env_file_path = os.path.join(os.path.dirname(__file__), "environments_config.json")
+        return load_json_file(env_file_path)
+    except Exception:
+        # Return default environments if file doesn't exist
+        return {
+            "SIT": {
+                "name": "SIT",
+                "base_url": SIT_BASE_URL,
+                "default_cookies": SIT_COOKIES,
+                "enabled": True
+            },
+            "DAI": {
+                "name": "DAI", 
+                "base_url": DAI_BASE_URL,
+                "default_cookies": DAI_COOKIES,
+                "enabled": True
+            },
+            "UAT": {
+                "name": "UAT",
+                "base_url": UAT_BASE_URL,
+                "default_cookies": UAT_COOKIES,
+                "enabled": True
+            }
+        }
+
+
+def save_environments_config(environments: Dict[str, Any]) -> bool:
+    """Save environments configuration to JSON file"""
+    try:
+        env_file_path = os.path.join(os.path.dirname(__file__), "environments_config.json")
+        return save_json_file(environments, env_file_path)
+    except Exception:
+        return False
+
+
+def get_enabled_environments() -> List[str]:
+    """Get list of enabled environment names"""
+    environments = load_environments_config()
+    return [env_name for env_name, config in environments.items() if config.get('enabled', True)]
 
 
 def get_user_specific_paths(username: str) -> Dict[str, str]:
