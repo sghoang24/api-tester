@@ -993,59 +993,43 @@ def _render_action_buttons(api_name, api, file_paths, is_temp):
 def _handle_save_button(api_name, api, file_paths, is_temp):
     """Handle save button click"""
     if is_temp:
-        # Show a form to save the temporary API with a new name
-        with st.form(key=f"save_temp_form_{int(time.time())}"):
-            st.subheader("Save API Configuration")
+        # Direct save for temporary APIs without showing form dialog
+        # Use the original suggested name
+        suggested_name = api.get("original_name", api_name.replace("temp_", ""))
+        
+        # Check if the name already exists
+        if suggested_name in st.session_state.apis and suggested_name != api_name:
+            # Add a number suffix to make it unique
+            counter = 1
+            base_name = suggested_name
+            while f"{base_name}_{counter}" in st.session_state.apis:
+                counter += 1
+            suggested_name = f"{base_name}_{counter}"
 
-            # Suggest the original name
-            suggested_name = api.get("original_name", api_name.replace("temp_", ""))
+        # Create a clean copy of the API without temporary flags
+        permanent_api = api.copy()
+        if "is_temporary" in permanent_api:
+            del permanent_api["is_temporary"]
+        if "original_name" in permanent_api:
+            del permanent_api["original_name"]
 
-            # Allow user to change API name when saving
-            new_api_name = st.text_input(
-                "API Name", 
-                value=suggested_name
-            )
+        # Save the permanent version
+        st.session_state.apis[suggested_name] = permanent_api
 
-            # Form submit buttons
-            submit_cols = st.columns(2)
-            submitted = submit_cols[0].form_submit_button("Save")
-            cancel = submit_cols[1].form_submit_button("Cancel")
+        # Remove the temporary version if different name
+        if suggested_name != api_name:
+            del st.session_state.apis[api_name]
 
-            if submitted:
-                if not new_api_name:
-                    st.error("API name cannot be empty")
-                else:
-                    # Check if the name already exists (and isn't the temp version)
-                    if new_api_name in st.session_state.apis and new_api_name != api_name:
-                        st.warning(f"Overwriting existing API: {new_api_name}")
+        # Update current API reference
+        st.session_state.current_api = suggested_name
 
-                    # Create a clean copy of the API without temporary flags
-                    permanent_api = api.copy()
-                    if "is_temporary" in permanent_api:
-                        del permanent_api["is_temporary"]
-                    if "original_name" in permanent_api:
-                        del permanent_api["original_name"]
-
-                    # Save the permanent version
-                    st.session_state.apis[new_api_name] = permanent_api
-
-                    # Remove the temporary version if different name
-                    if new_api_name != api_name:
-                        del st.session_state.apis[api_name]
-
-                    # Update current API reference
-                    st.session_state.current_api = new_api_name
-
-                    # Save to file and update user data
-                    if save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"]):
-                        _save_current_user_data()  # Update the logged_in_users dict
-                        st.success(f"API configuration saved as '{new_api_name}'")
-                    else:
-                        st.error("Failed to save API configuration")
-                    st.rerun()
-
-            if cancel:
-                st.rerun()
+        # Save to file and update user data
+        if save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"]):
+            _save_current_user_data()  # Update the logged_in_users dict
+            st.success(f"API configuration saved as '{suggested_name}'")
+        else:
+            st.error("Failed to save API configuration")
+        st.rerun()
     else:
         # Direct save for non-temporary APIs
         st.session_state.apis[api_name] = api.copy()
