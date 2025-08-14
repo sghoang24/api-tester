@@ -37,12 +37,39 @@ def get_current_base_url(current_env: str) -> str:
 
 
 def load_environments_config() -> Dict[str, Any]:
-    """Load environments configuration from JSON file"""
+    """Load environments configuration, combining defaults with admin-added environments"""
     try:
+        # Start with defaults
+        result = {
+            "SIT": {
+                "name": "SIT",
+                "base_url": SIT_BASE_URL,
+                "default_cookies": SIT_COOKIES,
+                "enabled": True
+            },
+            "DAI": {
+                "name": "DAI", 
+                "base_url": DAI_BASE_URL,
+                "default_cookies": DAI_COOKIES,
+                "enabled": True
+            },
+            "UAT": {
+                "name": "UAT",
+                "base_url": UAT_BASE_URL,
+                "default_cookies": UAT_COOKIES,
+                "enabled": True
+            }
+        }
+
+        # Add admin environments if file exists
         env_file_path = os.path.join(os.path.dirname(__file__), "environments_config.json")
-        return load_json_file(env_file_path)
+        if os.path.exists(env_file_path):
+            admin_envs = load_json_file(env_file_path)
+            result.update(admin_envs)
+        
+        return result
     except Exception:
-        # Return default environments if file doesn't exist
+        # Return defaults if anything fails
         return {
             "SIT": {
                 "name": "SIT",
@@ -212,42 +239,40 @@ def save_api_history(history: List[Dict[str, Any]], file_path: str) -> bool:
 
 
 def load_cookies_config(file_path: str, admin_file_path: Optional[str] = None) -> Dict[str, str]:
-    """Load cookies configurations from JSON file with admin override option"""
+    """Load cookies configurations with simple priority: user cookies (if not empty) > admin cookies > defaults"""
     try:
-        # Default cookies
-        default_cookies = {
-            "DAI": DAI_COOKIES,
-            "SIT": SIT_COOKIES,
-            "UAT": UAT_COOKIES
-        }
+        # Get all available environments
+        environments = load_environments_config()
         
-        # Admin cookies (global)
+        # Load admin cookies
         admin_cookies = {}
         if admin_file_path and os.path.exists(admin_file_path):
             admin_cookies = load_json_file(admin_file_path)
         
-        # User cookies (personal)
+        # Load user cookies (default to empty for all environments)
         user_cookies = {}
         if os.path.exists(file_path):
             user_cookies = load_json_file(file_path)
         
-        # Combine with priority: user > admin > default
+        # Initialize result with empty cookies for all environments
         result = {}
-        for env in ["DAI", "SIT", "UAT"]:
-            if env in user_cookies:
-                result[env] = user_cookies[env]
-            elif env in admin_cookies:
-                result[env] = admin_cookies[env]
-            else:
-                result[env] = default_cookies.get(env, "")
+        for env_name, env_config in environments.items():
+            if not env_config.get('enabled', True):
+                continue  # Skip disabled environments
+            
+            # Default to empty string for user cookies
+            result[env_name] = ""
+        
+        # Only set user cookies if they exist and are not empty
+        for env_name in result.keys():
+            if env_name in user_cookies and user_cookies[env_name].strip():
+                result[env_name] = user_cookies[env_name]
         
         return result
     except Exception:
-        return {
-            "DAI": DAI_COOKIES,
-            "SIT": SIT_COOKIES,
-            "UAT": UAT_COOKIES
-        }
+        # Simple fallback - all environments get empty cookies
+        environments = load_environments_config()
+        return {env_name: "" for env_name, config in environments.items() if config.get('enabled', True)}
 
 
 def save_cookies_config(configs: Dict[str, str], file_path: str) -> bool:

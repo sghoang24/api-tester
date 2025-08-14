@@ -205,7 +205,7 @@ def _handle_multi_user_login(username: str, is_admin: bool):
         'api_responses': {},
         'current_env': "SIT",
         'api_history': [],
-        'cookies_config': {}
+        'cookies_config': {}  # Start with empty cookies - will be loaded properly in _load_user_data
     }
 
     # Set as active user if it's the first one or if no active user
@@ -241,10 +241,23 @@ def _load_user_data(username: str):
         user_data['api_history'] = load_api_history(user_data['file_paths']["API_HISTORY_FILE"])
 
     if not user_data['cookies_config']:
-        user_data['cookies_config'] = load_cookies_config(
-            user_data['file_paths']["COOKIES_CONFIG_FILE"],
-            ADMIN_COOKIES_FILE
-        )
+        if user_data['is_admin'] and username == "adminadmin":
+            # For admin user, load from global admin cookies file
+            if os.path.exists(ADMIN_COOKIES_FILE):
+                try:
+                    admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+                    # Initialize with admin cookies (not empty like regular users)
+                    user_data['cookies_config'] = admin_cookies
+                except Exception:
+                    user_data['cookies_config'] = {}
+            else:
+                user_data['cookies_config'] = {}
+        else:
+            # For regular users, load with empty defaults
+            user_data['cookies_config'] = load_cookies_config(
+                user_data['file_paths']["COOKIES_CONFIG_FILE"],
+                ADMIN_COOKIES_FILE
+            )
 
     # Set session state to current user's data
     st.session_state.apis = user_data['apis']
@@ -252,6 +265,26 @@ def _load_user_data(username: str):
     st.session_state.current_env = user_data['current_env']
     st.session_state.api_history = user_data['api_history']
     st.session_state.cookies_config = user_data['cookies_config']
+    
+    # Always refresh cookies config to get latest admin values and ensure empty defaults
+    if user_data['is_admin'] and username == "adminadmin":
+        # For admin user, always load from global admin cookies file
+        if os.path.exists(ADMIN_COOKIES_FILE):
+            try:
+                admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+                st.session_state.cookies_config = admin_cookies
+                user_data['cookies_config'] = admin_cookies
+            except Exception:
+                st.session_state.cookies_config = {}
+                user_data['cookies_config'] = {}
+    else:
+        # For regular users, load with empty defaults
+        st.session_state.cookies_config = load_cookies_config(
+            user_data['file_paths']["COOKIES_CONFIG_FILE"],
+            ADMIN_COOKIES_FILE
+        )
+        # Update user data with refreshed cookies
+        user_data['cookies_config'] = st.session_state.cookies_config
 
 
 def _logout_user(username: str):
@@ -417,6 +450,23 @@ def show_admin_panel():
                         admin_cookies[env] = cookies_string
                         if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
                             st.success(f"Global cookies for {env} saved successfully!")
+                            
+                            # Clear all users' cookies for this environment so they use admin cookies by default
+                            for username in st.session_state.logged_in_users:
+                                user_data = st.session_state.logged_in_users[username]
+                                # Clear this environment's cookies for the user
+                                if user_data['cookies_config'].get(env):
+                                    user_data['cookies_config'][env] = ""
+                                
+                                # Save user's updated cookies config to file
+                                user_cookies_file = user_data['file_paths']["COOKIES_CONFIG_FILE"]
+                                save_cookies_config(user_data['cookies_config'], user_cookies_file)
+                            
+                            # Also update current session if we're looking at this environment
+                            if st.session_state.get('current_env') == env:
+                                st.session_state.cookies_config[env] = ""
+                            
+                            st.info(f"All users' cookies for {env} have been cleared to use the new admin cookies.")
                         else:
                             st.error(f"Failed to save cookies for {env}")
 
@@ -429,6 +479,23 @@ def show_admin_panel():
                 
                 if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
                     st.success("All environments reset to default cookies")
+                    
+                    # Clear all users' cookies for all environments so they use the new admin defaults
+                    for username in st.session_state.logged_in_users:
+                        user_data = st.session_state.logged_in_users[username]
+                        # Clear all environment cookies for the user
+                        for env in enabled_envs:
+                            user_data['cookies_config'][env] = ""
+                        
+                        # Save user's updated cookies config to file
+                        user_cookies_file = user_data['file_paths']["COOKIES_CONFIG_FILE"]
+                        save_cookies_config(user_data['cookies_config'], user_cookies_file)
+                    
+                    # Also update current session
+                    for env in enabled_envs:
+                        st.session_state.cookies_config[env] = ""
+                    
+                    st.info("All users' cookies have been cleared to use the new admin default cookies.")
                 else:
                     st.error("Failed to reset cookies")
                 st.rerun()
@@ -537,6 +604,12 @@ def main():
             # Update current user's environment
             if st.session_state.active_user in st.session_state.logged_in_users:
                 st.session_state.logged_in_users[st.session_state.active_user]['current_env'] = env
+
+            # Refresh cookies config to get latest admin values for all environments
+            st.session_state.cookies_config = load_cookies_config(
+                st.session_state.file_paths["COOKIES_CONFIG_FILE"],
+                ADMIN_COOKIES_FILE
+            )
 
             # Update URLs for all APIs to use the new environment's base URL
             for api_name in st.session_state.apis:
@@ -691,32 +764,94 @@ def manage_cookies(file_path):
     """Manage cookies for each environment using string format"""
     st.subheader("Cookies for " + st.session_state.current_env)
     
-    # Get current environment cookies string
-    env_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
-
-    # Display as editable text area with string format
-    cookies_string = st.text_area(
-        "Edit cookies (format: name1=value1; name2=value2)",
-        value=env_cookies_string,
-        height=150,
-        help="Enter cookies in standard format: name1=value1; name2=value2"
-    )
-
-    # Save button
-    if st.button("Save Cookies"):
-        # Save the cookies string
-        st.session_state.cookies_config[st.session_state.current_env] = cookies_string
-
-        # Save to file and update user data
-        if save_cookies_config(st.session_state.cookies_config, file_path):
-            _save_current_user_data()  # Update the logged_in_users dict
-            st.success(f"Cookies for {st.session_state.current_env} saved successfully!")
-        else:
-            st.error("Failed to save cookies configuration")
-
-    # Reset to admin defaults button
-    if st.button("Reset to Admin Defaults"):
+    # Check if current user is admin
+    is_admin = st.session_state.get("is_admin", False)
+    
+    if is_admin:
+        # Admin user - manage global cookies
+        st.info("🔧 **Admin Mode**: You are managing global cookies that affect all users.")
+        
         # Load admin cookies
+        admin_cookies = {}
+        if os.path.exists(ADMIN_COOKIES_FILE):
+            try:
+                admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+            except Exception:
+                admin_cookies = {}
+
+        # Get current environment cookies string from admin config
+        env_cookies_string = admin_cookies.get(st.session_state.current_env, "")
+        
+        # Display as editable text area with admin context
+        cookies_string = st.text_area(
+            f"Global cookies for {st.session_state.current_env} (affects all users)",
+            value=env_cookies_string,
+            height=150,
+            help="These cookies will be used by all users unless they set custom cookies"
+        )
+
+        # Save button for admin
+        if st.button("Save Global Cookies"):
+            admin_cookies[st.session_state.current_env] = cookies_string
+            print(f"[DEBUG] Admin saving cookies for {st.session_state.current_env}: {cookies_string}")
+            print(f"[DEBUG] Saving to file: {ADMIN_COOKIES_FILE}")
+            
+            if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
+                print(f"[DEBUG] Successfully saved to {ADMIN_COOKIES_FILE}")
+                st.success(f"Global cookies for {st.session_state.current_env} saved successfully!")
+                
+                # Update admin's session state to reflect the saved cookies
+                st.session_state.cookies_config[st.session_state.current_env] = cookies_string
+                print(f"[DEBUG] Updated admin session state cookies")
+                
+                # Update admin's user data as well
+                if st.session_state.active_user in st.session_state.logged_in_users:
+                    st.session_state.logged_in_users[st.session_state.active_user]['cookies_config'][st.session_state.current_env] = cookies_string
+                    print(f"[DEBUG] Updated admin user data cookies")
+                
+                # Clear all users' cookies for this environment so they use admin cookies by default
+                for username in st.session_state.logged_in_users:
+                    if username != "adminadmin":  # Don't clear admin's own cookies
+                        user_data = st.session_state.logged_in_users[username]
+                        # Clear this environment's cookies for the user
+                        user_data['cookies_config'][st.session_state.current_env] = ""
+                        
+                        # Save user's updated cookies config to file
+                        user_cookies_file = user_data['file_paths']["COOKIES_CONFIG_FILE"]
+                        save_cookies_config(user_data['cookies_config'], user_cookies_file)
+                        print(f"[DEBUG] Cleared cookies for user: {username}")
+                
+                st.info("All users' cookies have been cleared to use the new global cookies.")
+                st.rerun()  # Refresh the UI to show updated values
+            else:
+                print(f"[DEBUG] Failed to save to {ADMIN_COOKIES_FILE}")
+                st.error("Failed to save global cookies")
+        
+        # Reset to defaults button for admin
+        if st.button("Reset to Environment Default"):
+            environments = load_environments_config()
+            default_cookies = environments.get(st.session_state.current_env, {}).get('default_cookies', '')
+            admin_cookies[st.session_state.current_env] = default_cookies
+            
+            if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
+                # Update admin's session state to reflect the reset cookies
+                st.session_state.cookies_config[st.session_state.current_env] = default_cookies
+                
+                # Update admin's user data as well
+                if st.session_state.active_user in st.session_state.logged_in_users:
+                    st.session_state.logged_in_users[st.session_state.active_user]['cookies_config'][st.session_state.current_env] = default_cookies
+                
+                st.success(f"Global cookies for {st.session_state.current_env} reset to environment default")
+                st.rerun()
+            else:
+                st.error("Failed to reset global cookies")
+                
+    else:
+        # Regular user - manage personal cookies (default empty)
+        # Get current environment cookies string - default to empty for users
+        env_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
+
+        # Show admin cookies for reference
         admin_cookies = {}
         if os.path.exists(ADMIN_COOKIES_FILE):
             try:
@@ -724,30 +859,59 @@ def manage_cookies(file_path):
             except:
                 admin_cookies = {}
         
-        if st.session_state.current_env in admin_cookies:
-            st.session_state.cookies_config[st.session_state.current_env] = admin_cookies[st.session_state.current_env]
-        else:
-            # Fallback to environment default cookies
-            environments = load_environments_config()
-            if st.session_state.current_env in environments:
-                default_cookies = environments[st.session_state.current_env].get('default_cookies', '')
-                st.session_state.cookies_config[st.session_state.current_env] = default_cookies
-            else:
-                # Final fallback to constants
-                if st.session_state.current_env == "DAI":
-                    st.session_state.cookies_config[st.session_state.current_env] = DAI_COOKIES
-                elif st.session_state.current_env == "SIT":
-                    st.session_state.cookies_config[st.session_state.current_env] = SIT_COOKIES
-                elif st.session_state.current_env == "UAT":
-                    st.session_state.cookies_config[st.session_state.current_env] = UAT_COOKIES
+        admin_cookie_value = admin_cookies.get(st.session_state.current_env, "")
+        if admin_cookie_value:
+            st.info(f"**Using Admin Cookie for {st.session_state.current_env}**")
+            # st.text(admin_cookie_value)
+            st.write("*Leave your cookies empty to use admin cookies automatically*")
+
+        # Display as editable text area with string format
+        cookies_string = st.text_area(
+            "Your custom cookies",
+            value=env_cookies_string,
+            height=150,
+            help="Leave empty to use admin cookies. Enter cookies in standard format: name1=value1; name2=value2",
+            placeholder="Leave empty to use admin cookies..."
+        )
+
+        # Save button
+        if st.button("Save Cookies"):
+            # Save the cookies string (can be empty)
+            st.session_state.cookies_config[st.session_state.current_env] = cookies_string
+
+            # Save to file and update user data
+            if save_cookies_config(st.session_state.cookies_config, file_path):
+                _save_current_user_data()  # Update the logged_in_users dict
+                if cookies_string.strip():
+                    st.success(f"Custom cookies for {st.session_state.current_env} saved successfully!")
                 else:
-                    st.session_state.cookies_config[st.session_state.current_env] = ""
-        
-        # Save to file and update user data
-        save_cookies_config(st.session_state.cookies_config, file_path)
-        _save_current_user_data()
-        st.success(f"Cookies for {st.session_state.current_env} reset to admin defaults")
-        st.rerun()
+                    st.success(f"Cookies cleared for {st.session_state.current_env}. Will use admin cookies.")
+            else:
+                st.error("Failed to save cookies configuration")
+
+        # Clear cookies button
+        if st.button("Clear My Cookies"):
+            # Set to empty string
+            st.session_state.cookies_config[st.session_state.current_env] = ""
+            
+            # Save to file and update user data
+            if save_cookies_config(st.session_state.cookies_config, file_path):
+                _save_current_user_data()
+                st.success(f"Cookies cleared for {st.session_state.current_env}. Will use admin cookies.")
+            else:
+                st.error("Failed to clear cookies")
+            st.rerun()
+
+        # Reset to admin defaults button (this now clears user cookies)
+        if st.button("Use Admin Cookies"):
+            # Set to empty string to use admin cookies
+            st.session_state.cookies_config[st.session_state.current_env] = ""
+            
+            # Save to file and update user data
+            save_cookies_config(st.session_state.cookies_config, file_path)
+            _save_current_user_data()
+            st.success(f"Will now use admin cookies for {st.session_state.current_env}")
+            st.rerun()
 def add_new_api():
     """Add new API."""
     with st.form("add_api_form"):
@@ -837,6 +1001,27 @@ def _render_headers_section(api):
     with st.expander("Headers", expanded=False):
         st.write("Add or modify headers:")
 
+        # Show current cookie information
+        current_cookies = api.get('cookies', {})
+        if current_cookies:
+            st.info("**Current Cookies:**")
+            cookie_display = []
+            for name, value in current_cookies.items():
+                # Truncate long cookie values for display
+                display_value = value if len(value) <= 50 else value[:47] + "..."
+                cookie_display.append(f"• {name} = {display_value}")
+            
+            if cookie_display:
+                st.text("\n".join(cookie_display))
+                
+                # Add Cookie header if not already present
+                cookie_header_value = "; ".join([f"{name}={value}" for name, value in current_cookies.items()])
+                if 'headers' not in api:
+                    api['headers'] = {}
+                api['headers']['Cookie'] = cookie_header_value
+        else:
+            st.info("No cookies configured for this request")
+
         # Display existing headers
         if api.get('headers'):
             for header_key in list(api['headers'].keys()):
@@ -844,14 +1029,24 @@ def _render_headers_section(api):
                 with col1:
                     st.text(header_key)
                 with col2:
-                    new_value = st.text_input(f"Value for {header_key}", 
-                                             value=api['headers'][header_key], 
-                                             key=f"header_value_{header_key}")
-                    api['headers'][header_key] = new_value
+                    # Special handling for Cookie header to show it's auto-generated
+                    if header_key.lower() == 'cookie':
+                        st.text_input(f"Value for {header_key}", 
+                                     value=api['headers'][header_key], 
+                                     key=f"header_value_{header_key}",
+                                     disabled=True,
+                                     help="Auto-generated from cookie configuration")
+                    else:
+                        new_value = st.text_input(f"Value for {header_key}", 
+                                                 value=api['headers'][header_key], 
+                                                 key=f"header_value_{header_key}")
+                        api['headers'][header_key] = new_value
                 with col3:
-                    if st.button("Delete", key=f"delete_header_{header_key}"):
-                        del api['headers'][header_key]
-                        st.rerun()
+                    # Don't allow deletion of auto-generated Cookie header
+                    if header_key.lower() != 'cookie':
+                        if st.button("Delete", key=f"delete_header_{header_key}"):
+                            del api['headers'][header_key]
+                            st.rerun()
 
         # Add new header
         new_header_key = st.text_input("New Header Name")
@@ -920,12 +1115,37 @@ def _render_cookies_section(api):
         cookie_options,
         index=0  # Default to "Use Environment Cookies"
     )
+    
+    # Store cookie choice in session state for dynamic loading
+    st.session_state['cookie_choice'] = cookie_choice
 
     if cookie_choice == "Use Environment Cookies":
-        # Use cookies from the cookies_config for the current environment
-        cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
-        api['cookies'] = cookies_string_to_dict(cookies_string)
-        st.info(f"Using {st.session_state.current_env} environment cookies")
+        # Get user's cookies for current environment
+        user_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
+        
+        # If user cookies are empty, use admin cookies
+        if not user_cookies_string.strip():
+            # Load admin cookies for display purposes
+            admin_cookies = {}
+            if os.path.exists(ADMIN_COOKIES_FILE):
+                try:
+                    admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+                except:
+                    admin_cookies = {}
+            
+            # Use admin cookies for current environment
+            cookies_string = admin_cookies.get(st.session_state.current_env, "")
+            if cookies_string.strip():
+                api['cookies'] = cookies_string_to_dict(cookies_string)
+                st.info(f"Will use admin cookies for {st.session_state.current_env} environment (loaded dynamically at request time)")
+            else:
+                api['cookies'] = {}
+                st.info(f"No cookies configured for {st.session_state.current_env} environment")
+        else:
+            # Use user's custom cookies
+            api['cookies'] = cookies_string_to_dict(user_cookies_string)
+            st.info(f"Will use your custom cookies for {st.session_state.current_env} environment")
+            
     elif cookie_choice == "Custom Cookies":
         # Allow custom cookies input as string
         with st.expander("Custom Cookies", expanded=True):
@@ -942,9 +1162,11 @@ def _render_cookies_section(api):
 
             api['custom_cookies_string'] = cookies_string
             api['cookies'] = cookies_string_to_dict(cookies_string)
+            st.info("Will use custom cookies (loaded at request time)")
     else:
         # No cookies
         api['cookies'] = {}
+        st.info("No cookies will be used")
 
 
 def _render_action_buttons(api_name, api, file_paths, is_temp):
@@ -1047,6 +1269,9 @@ def _handle_send_button(api_name, api, file_paths):
     """Handle send request button click"""
     with st.spinner("Sending request..."):
         try:
+            # Dynamically load cookies right before sending request
+            _load_dynamic_cookies_for_request(api)
+            
             start_time = time.time()
             response = make_http_request(api)
             end_time = time.time()
@@ -1072,6 +1297,48 @@ def _handle_send_button(api_name, api, file_paths):
             st.rerun()
         except Exception as e:
             st.error(f"Error: {str(e)}")
+
+
+def _load_dynamic_cookies_for_request(api):
+    """Dynamically load cookies for API request based on current configuration"""
+    # Check if we should use environment cookies
+    cookie_choice = st.session_state.get('cookie_choice', 'Use Environment Cookies')
+    
+    if cookie_choice == "Use Environment Cookies":
+        # Get user's cookies for current environment
+        user_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
+        
+        # If user cookies are empty, dynamically load admin cookies
+        if not user_cookies_string.strip():
+            # Load admin cookies fresh from file
+            admin_cookies = {}
+            if os.path.exists(ADMIN_COOKIES_FILE):
+                try:
+                    admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
+                except:
+                    admin_cookies = {}
+            
+            # Use admin cookies for current environment
+            cookies_string = admin_cookies.get(st.session_state.current_env, "")
+            if cookies_string.strip():
+                api['cookies'] = cookies_string_to_dict(cookies_string)
+                print(f"[Dynamic Load] Using admin cookies for {st.session_state.current_env}: {cookies_string}")
+            else:
+                api['cookies'] = {}
+                print(f"[Dynamic Load] No admin cookies found for {st.session_state.current_env}")
+        else:
+            # Use user's custom cookies
+            api['cookies'] = cookies_string_to_dict(user_cookies_string)
+            print(f"[Dynamic Load] Using user cookies for {st.session_state.current_env}: {user_cookies_string}")
+    elif cookie_choice == "Custom Cookies":
+        # Use custom cookies from the API config
+        custom_cookies_string = api.get('custom_cookies_string', '')
+        api['cookies'] = cookies_string_to_dict(custom_cookies_string)
+        print(f"[Dynamic Load] Using custom cookies: {custom_cookies_string}")
+    else:
+        # No cookies
+        api['cookies'] = {}
+        print("[Dynamic Load] No cookies configured")
 
 
 def _handle_delete_button(api_name, file_paths):
@@ -1102,7 +1369,7 @@ def _render_response_section(api_name):
         st.write(f"Status Code: {resp['status_code']} | Time: {resp['time']} ms")
 
         # Response tabs
-        tab1, tab2 = st.tabs(["Response Body", "Headers"])
+        tab1, tab2, tab3 = st.tabs(["Response Body", "Response Headers", "Request Info"])
 
         with tab1:
             if isinstance(resp['content'], dict) or isinstance(resp['content'], list):
@@ -1112,6 +1379,27 @@ def _render_response_section(api_name):
 
         with tab2:
             st.json(resp['headers'])
+
+        with tab3:
+            # Display request information
+            if api_name in st.session_state.apis:
+                api = st.session_state.apis[api_name]
+                request_info = {
+                    "method": api.get('method', 'GET'),
+                    "url": api.get('url', ''),
+                    "environment": st.session_state.get('current_env', 'Unknown'),
+                    "headers": api.get('headers', {}),
+                    "cookies": api.get('cookies', {}),
+                    "query_parameters": api.get('params', {}),
+                    "request_body": api.get('body', {}) if api.get('method') in ['POST', 'PUT', 'PATCH'] else None
+                }
+                
+                # Remove None values for cleaner display
+                request_info = {k: v for k, v in request_info.items() if v is not None}
+                
+                st.json(request_info)
+            else:
+                st.warning("Request information not available")
 
 
 def _save_to_history(api_name, api_config, response, file_path):
@@ -1184,6 +1472,9 @@ def display_api_tester(api_name, file_paths):
         # Update the URL using url_path
         api["url"] = f"{base_url}{path_to_use}"
 
+    # Cookie options (process first so headers can show cookie info)
+    _render_cookies_section(api)
+
     # Headers section
     _render_headers_section(api)
 
@@ -1194,9 +1485,6 @@ def display_api_tester(api_name, file_paths):
     # Request Body (for POST, PUT, etc.)
     if api['method'] in ["POST", "PUT", "PATCH"]:
         _render_body_section(api)
-
-    # Cookie options
-    _render_cookies_section(api)
 
     # Action buttons
     _render_action_buttons(api_name, api, file_paths, is_temp)
