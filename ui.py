@@ -1556,6 +1556,7 @@ def show_history():
 if __name__ == "__main__":
     st.set_page_config(
         page_title="API Tester",
+        page_icon="🐼",
         layout="wide",
         initial_sidebar_state="expanded"
     )
