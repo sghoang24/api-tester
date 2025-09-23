@@ -43,12 +43,12 @@ def load_help_content():
             with open(help_file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         else:
-            return "Không tìm thấy file hướng dẫn sử dụng."
+            return "Help file not found."
     except Exception as e:
-        return f"Lỗi khi đọc file hướng dẫn: {str(e)}"
+        return f"Error reading help file: {str(e)}"
 
 
-@st.dialog("📖 Hướng Dẫn Sử Dụng", width="large")
+@st.dialog("📖 Help", width="large")
 def show_help_dialog():
     """Show help dialog with markdown content"""
     help_content = load_help_content()
@@ -82,7 +82,7 @@ def save_to_predefined(api_name, api, file_paths):
 def show_multi_user_login():
     """Display the multi-user login page"""
     # Help button above title
-    if st.button("📖 Hướng dẫn", key="login_help", help="Xem hướng dẫn sử dụng ứng dụng"):
+    if st.button("📖 Instruction", key="login_help", help="Take a look about instruction"):
         show_help_dialog()
     
     # Title
@@ -170,7 +170,8 @@ def show_multi_user_login():
 
         if create_button and new_username:
             all_users = list(st.session_state.logged_in_users.keys()) + existing_users
-            error_msg = validate_username(new_username, all_users)
+            # error_msg = validate_username(new_username, all_users)
+            error_msg = ""
             if error_msg:
                 st.error(error_msg)
             else:
@@ -197,13 +198,22 @@ def show_multi_user_login():
 
 def _handle_multi_user_login(username: str, is_admin: bool):
     """Handle multi-user login setup"""
+    # Get enabled environments
+    enabled_envs = get_enabled_environments()
+    
+    # Determine default environment based on username
+    if username.upper().startswith("BA") and "DEMO" in enabled_envs:
+        default_env = "DEMO"
+    else:
+        default_env = "SIT" if "SIT" in enabled_envs else enabled_envs[0] if enabled_envs else "SIT"
+    
     # Add user to logged in users
     st.session_state.logged_in_users[username] = {
         'is_admin': is_admin,
         'file_paths': get_user_specific_paths(username),
         'apis': {},
         'api_responses': {},
-        'current_env': "SIT",
+        'current_env': default_env,
         'api_history': [],
         'cookies_config': {}  # Start with empty cookies - will be loaded properly in _load_user_data
     }
@@ -232,6 +242,7 @@ def _load_user_data(username: str):
     # Load user's saved data if not already loaded
     if not user_data['apis']:
         try:
+            # Always load APIs for any user (including admin)
             user_data['apis'] = load_user_apis(user_data['file_paths']["USER_APIS_FILE"])
         except Exception as e:
             st.error(f"Error loading user APIs for {username}: {str(e)}")
@@ -533,7 +544,7 @@ def main():
     file_paths = st.session_state.file_paths
 
     # Help button above title
-    if st.button("📖 Hướng dẫn", help="Xem hướng dẫn sử dụng ứng dụng"):
+    if st.button("📖 Instruction", help="Take a look about instruction"):
         show_help_dialog()
 
     # Create a layout with title and user switcher
@@ -566,7 +577,12 @@ def main():
     if 'api_responses' not in st.session_state:
         st.session_state.api_responses = {}
     if 'current_env' not in st.session_state:
-        st.session_state.current_env = "SIT"
+        # Set default environment based on username (BA users default to DEMO)
+        enabled_envs = get_enabled_environments()
+        if st.session_state.username.upper().startswith("BA") and "DEMO" in enabled_envs:
+            st.session_state.current_env = "DEMO"
+        else:
+            st.session_state.current_env = "SIT" if "SIT" in enabled_envs else enabled_envs[0] if enabled_envs else "SIT"
 
     # Admin options and logout in sidebar
     st.sidebar.markdown(f"**Active User:** {st.session_state.username}")
@@ -632,121 +648,131 @@ def main():
     col1, col2 = st.columns([1, 3])
 
     with col1:
-        st.subheader("API Management")
-        add_new_api()
-
-        # Predefined API Tests
-        st.subheader("Predefined API Tests")
-        load_predefined_api(file_paths["API_CONFIG_FILE"])
+        # Determine if user is a BA account (username starts with BA)
+        is_ba_account = st.session_state.username.upper().startswith("BA")
+        
+        # Combined API Management and Predefined API Tests in a single expander
+        # Auto-close for BA accounts, open for others
+        with st.expander("API Management & Predefined Tests", expanded=not is_ba_account):
+            # API Management section
+            st.subheader("API Management")
+            add_new_api()
+            
+            # Predefined API Tests section
+            st.subheader("Predefined API Tests")
+            load_predefined_api(file_paths["API_CONFIG_FILE"])
 
         # List of saved APIs
         if st.session_state.apis:
-            st.subheader("Saved APIs")
+            # Saved APIs in an expander - always expanded regardless of account type
+            with st.expander("Saved APIs", expanded=True):
+                # Create a container with fixed height for scrolling
+                api_list_container = st.container()
 
-            # Create a container with fixed height for scrolling
-            api_list_container = st.container()
+                # Set max height with CSS to enable scrolling
+                api_list_container.markdown("""
+                <style>
+                .api-list {
+                    max-height: 300px;
+                    overflow-y: auto;
+                    padding-right: 10px;
+                }
+                </style>
+                """, unsafe_allow_html=True)
 
-            # Set max height with CSS to enable scrolling
-            api_list_container.markdown("""
-            <style>
-            .api-list {
-                max-height: 300px;
-                overflow-y: auto;
-                padding-right: 10px;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+                # Create scrollable area
+                with api_list_container:
+                    st.markdown('<div class="api-list">', unsafe_allow_html=True)
 
-            # Create scrollable area
-            with api_list_container:
-                st.markdown('<div class="api-list">', unsafe_allow_html=True)
+                    # Display each API with open, rename and delete buttons
+                    # Use reversed list to show newest APIs first
+                    api_names = list(st.session_state.apis.keys())
+                    # Reverse the order so newest APIs appear first
+                    for api_name in reversed(api_names):
+                        cols = st.columns([3, 1, 1, 1])
 
-                # Display each API with open, rename and delete buttons
-                for api_name in list(st.session_state.apis.keys()):  # Use list to avoid dictionary size change during iteration
-                    cols = st.columns([3, 1, 1, 1])
+                        # Display API name
+                        cols[0].write(api_name)
 
-                    # Display API name
-                    cols[0].write(api_name)
+                        # Open button
+                        if cols[1].button("🔍", key=f"open_{api_name}"):
+                            st.session_state.current_api = api_name
+                            st.rerun()
 
-                    # Open button
-                    if cols[1].button("🔍", key=f"open_{api_name}"):
-                        st.session_state.current_api = api_name
-                        st.rerun()
+                        # Rename button
+                        if cols[2].button("✏️", key=f"rename_{api_name}"):
+                            # Show rename form
+                            st.session_state[f"rename_mode_{api_name}"] = True
+                            st.rerun()
 
-                    # Rename button
-                    if cols[2].button("✏️", key=f"rename_{api_name}"):
-                        # Show rename form
-                        st.session_state[f"rename_mode_{api_name}"] = True
-                        st.rerun()
+                        # Delete button
+                        if cols[3].button("🗑️", key=f"del_{api_name}"):
+                            # Delete the API
+                            del st.session_state.apis[api_name]
 
-                    # Delete button
-                    if cols[3].button("🗑️", key=f"del_{api_name}"):
-                        # Delete the API
-                        del st.session_state.apis[api_name]
+                            # Also delete any associated response
+                            if api_name in st.session_state.api_responses:
+                                del st.session_state.api_responses[api_name]
 
-                        # Also delete any associated response
-                        if api_name in st.session_state.api_responses:
-                            del st.session_state.api_responses[api_name]
+                            # Update current_api if needed
+                            if 'current_api' in st.session_state and st.session_state.current_api == api_name:
+                                if st.session_state.apis:
+                                    st.session_state.current_api = next(iter(st.session_state.apis))
+                                else:
+                                    del st.session_state.current_api
 
-                        # Update current_api if needed
-                        if 'current_api' in st.session_state and st.session_state.current_api == api_name:
-                            if st.session_state.apis:
-                                st.session_state.current_api = next(iter(st.session_state.apis))
-                            else:
-                                del st.session_state.current_api
+                            # Save the updated APIs to file
+                            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
 
-                        # Save the updated APIs to file
-                        save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+                            st.success(f"Deleted API: {api_name}")
+                            st.rerun()
 
-                        st.success(f"Deleted API: {api_name}")
-                        st.rerun()
+                        # Show rename form if in rename mode
+                        if st.session_state.get(f"rename_mode_{api_name}", False):
+                            with st.form(key=f"rename_form_{api_name}"):
+                                new_name = st.text_input("New name", value=api_name)
 
-                    # Show rename form if in rename mode
-                    if st.session_state.get(f"rename_mode_{api_name}", False):
-                        with st.form(key=f"rename_form_{api_name}"):
-                            new_name = st.text_input("New name", value=api_name)
+                                rename_cols = st.columns(2)
+                                rename_submit = rename_cols[0].form_submit_button("Save")
+                                rename_cancel = rename_cols[1].form_submit_button("Cancel")
 
-                            rename_cols = st.columns(2)
-                            rename_submit = rename_cols[0].form_submit_button("Save")
-                            rename_cancel = rename_cols[1].form_submit_button("Cancel")
+                                if rename_submit and new_name:
+                                    if new_name != api_name:
+                                        if new_name in st.session_state.apis:
+                                            st.error(f"Name '{new_name}' already exists")
+                                        else:
+                                            # Create a copy of the API with the new name
+                                            st.session_state.apis[new_name] = st.session_state.apis[api_name].copy()
 
-                            if rename_submit and new_name:
-                                if new_name != api_name:
-                                    if new_name in st.session_state.apis:
-                                        st.error(f"Name '{new_name}' already exists")
-                                    else:
-                                        # Create a copy of the API with the new name
-                                        st.session_state.apis[new_name] = st.session_state.apis[api_name].copy()
+                                            # Copy response data if exists
+                                            if api_name in st.session_state.api_responses:
+                                                st.session_state.api_responses[new_name] = st.session_state.api_responses[api_name]
 
-                                        # Copy response data if exists
-                                        if api_name in st.session_state.api_responses:
-                                            st.session_state.api_responses[new_name] = st.session_state.api_responses[api_name]
+                                            # Delete old API
+                                            del st.session_state.apis[api_name]
 
-                                        # Delete old API
-                                        del st.session_state.apis[api_name]
+                                            # Update current_api if needed
+                                            if 'current_api' in st.session_state and st.session_state.current_api == api_name:
+                                                st.session_state.current_api = new_name
 
-                                        # Update current_api if needed
-                                        if 'current_api' in st.session_state and st.session_state.current_api == api_name:
-                                            st.session_state.current_api = new_name
+                                            # Save updated APIs to file
+                                            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
 
-                                        # Save updated APIs to file
-                                        save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+                                            st.success(f"Renamed '{api_name}' to '{new_name}'")
 
-                                        st.success(f"Renamed '{api_name}' to '{new_name}'")
+                                            # Reset rename mode
+                                            del st.session_state[f"rename_mode_{api_name}"]
+                                            st.rerun()
 
-                                        # Reset rename mode
-                                        del st.session_state[f"rename_mode_{api_name}"]
-                                        st.rerun()
+                                if rename_cancel:
+                                    # Reset rename mode
+                                    del st.session_state[f"rename_mode_{api_name}"]
+                                    st.rerun()
 
-                            if rename_cancel:
-                                # Reset rename mode
-                                del st.session_state[f"rename_mode_{api_name}"]
-                                st.rerun()
+                        # Add a separator line
+                        st.markdown("---")
 
-                    # Add a separator line
-                    st.markdown("---")
-
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("No APIs added yet. Add one above or load from predefined tests.")
 
@@ -1450,33 +1476,35 @@ def display_api_tester(api_name, file_paths):
     st.write(f"URL Path: {url_path}")  # Use the actual path that's stored in the API config
     st.write(f"Method: {api['method']}")
 
-    # Option to edit the path
-    new_path = st.text_input(
-        "Edit Path", 
-        value=path,
-        help="Edit the API path (should start with a slash)"
-    )
+    is_ba_account = st.session_state.username.upper().startswith("BA")
+    with st.expander("Edit URL Path", expanded=not is_ba_account):
+        # Option to edit the path
+        new_path = st.text_input(
+            "Edit Path", 
+            value=path,
+            help="Edit the API path (should start with a slash)"
+        )
 
-    if new_path != path:
-        # Ensure path starts with a slash
-        new_path = ensure_path_format(new_path)
+        if new_path != path:
+            # Ensure path starts with a slash
+            new_path = ensure_path_format(new_path)
 
-        # Update path and URL
-        api["path"] = new_path
-        api["url"] = f"{base_url}{new_path}"
-        st.success("Path updated!")
-    elif not path and url_path:
-        # If path is empty but url_path exists, use url_path
-        path_to_use = ensure_path_format(url_path)
+            # Update path and URL
+            api["path"] = new_path
+            api["url"] = f"{base_url}{new_path}"
+            st.success("Path updated!")
+        elif not path and url_path:
+            # If path is empty but url_path exists, use url_path
+            path_to_use = ensure_path_format(url_path)
 
-        # Update the URL using url_path
-        api["url"] = f"{base_url}{path_to_use}"
+            # Update the URL using url_path
+            api["url"] = f"{base_url}{path_to_use}"
 
-    # Cookie options (process first so headers can show cookie info)
-    _render_cookies_section(api)
+        # Cookie options (process first so headers can show cookie info)
+        _render_cookies_section(api)
 
-    # Headers section
-    _render_headers_section(api)
+        # Headers section
+        _render_headers_section(api)
 
     # Parameters section (for GET requests)
     if api['method'] == "GET":

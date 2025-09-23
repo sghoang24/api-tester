@@ -1,0 +1,28 @@
+{
+  "Random AcadStanding": {
+    "url_path": "/processingresult/devrandomacadstanding",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Cookie": "admin_demo_test=true; Cookies=admin_configured_demo_cookie"
+    },
+    "params": {},
+    "body": {
+      "courses": [
+        {
+          "courseId": "019807eb-a6eb-742e-84bc-3ccba33ec1c6",
+          "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
+        }
+      ],
+      "studentIds": [],
+      "numberOfRandom": 12,
+      "topX": 12
+    },
+    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1/processingresult/devrandomacadstanding",
+    "path": "",
+    "cookies": {
+      "admin_demo_test": "true",
+      "Cookies": "admin_configured_demo_cookie"
+    }
+  }
+}
