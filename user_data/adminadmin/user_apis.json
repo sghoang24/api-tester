@@ -7,7 +7,7 @@
     },
     "params": {},
     "body": {},
-    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/subjectcomponent/syncweightage",
+    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1",
     "path": "",
     "cookies": {
       "_ga": "GA1.1.379208491.1753342019",
