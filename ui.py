@@ -99,7 +99,20 @@ def show_multi_user_login():
         st.subheader("Currently Logged In Users")
         cols = st.columns(len(st.session_state.logged_in_users) + 1)
         
-        for i, (username, user_data) in enumerate(st.session_state.logged_in_users.items()):
+        # Sort users to prioritize BA users
+        ba_users = [(username, user_data) for username, user_data in st.session_state.logged_in_users.items() 
+                   if username.upper().startswith("BA")]
+        regular_users = [(username, user_data) for username, user_data in st.session_state.logged_in_users.items() 
+                        if not username.upper().startswith("BA")]
+        
+        # Sort each group alphabetically
+        ba_users.sort(key=lambda x: x[0])
+        regular_users.sort(key=lambda x: x[0])
+        
+        # Combine with BA users first
+        sorted_users = ba_users + regular_users
+        
+        for i, (username, user_data) in enumerate(sorted_users):
             with cols[i]:
                 is_active = st.session_state.active_user == username
                 user_type = "Admin" if user_data.get('is_admin', False) else "User"
@@ -188,8 +201,19 @@ def show_multi_user_login():
     if st.session_state.logged_in_users:
         if st.button("🚀 Start Using API Tester", type="primary"):
             if not st.session_state.active_user:
-                # Set first user as active if none selected
-                st.session_state.active_user = list(st.session_state.logged_in_users.keys())[0]
+                # Prioritize BA users when selecting the first active user
+                ba_users = [user for user in st.session_state.logged_in_users.keys() 
+                           if user.upper().startswith("BA")]
+                regular_users = [user for user in st.session_state.logged_in_users.keys() 
+                                if not user.upper().startswith("BA")]
+                
+                # Sort each group and combine with BA users first
+                ba_users.sort()
+                regular_users.sort()
+                sorted_users = ba_users + regular_users
+                
+                # Set first user as active (BA user if available)
+                st.session_state.active_user = sorted_users[0]
                 _load_user_data(st.session_state.active_user)
 
             st.session_state.show_main_app = True
@@ -218,8 +242,12 @@ def _handle_multi_user_login(username: str, is_admin: bool):
         'cookies_config': {}  # Start with empty cookies - will be loaded properly in _load_user_data
     }
 
-    # Set as active user if it's the first one or if no active user
+    # Set as active user if it's the first one, if no active user, or if it's a BA user
     if not st.session_state.active_user or len(st.session_state.logged_in_users) == 1:
+        st.session_state.active_user = username
+        _load_user_data(username)
+    # If the new user is a BA user and the current active user is not, switch to the BA user
+    elif username.upper().startswith("BA") and not st.session_state.active_user.upper().startswith("BA"):
         st.session_state.active_user = username
         _load_user_data(username)
 
@@ -312,8 +340,19 @@ def _logout_user(username: str):
         # If this was the active user, switch to another user or clear session
         if st.session_state.active_user == username:
             if st.session_state.logged_in_users:
-                # Switch to first available user
-                new_active_user = list(st.session_state.logged_in_users.keys())[0]
+                # Prioritize BA users when selecting a new active user
+                ba_users = [user for user in st.session_state.logged_in_users.keys() 
+                           if user.upper().startswith("BA")]
+                regular_users = [user for user in st.session_state.logged_in_users.keys() 
+                                if not user.upper().startswith("BA")]
+                
+                # Sort each group and combine with BA users first
+                ba_users.sort()
+                regular_users.sort()
+                sorted_users = ba_users + regular_users
+                
+                # Switch to first available user (BA user if available)
+                new_active_user = sorted_users[0]
                 st.session_state.active_user = new_active_user
                 _load_user_data(new_active_user)
             else:
@@ -559,11 +598,22 @@ def main():
     with user_col:
         # User switcher dropdown
         user_options = list(st.session_state.logged_in_users.keys())
-        current_index = user_options.index(st.session_state.active_user) if st.session_state.active_user in user_options else 0
+        
+        # Sort the user options to prioritize BA users
+        ba_users = [user for user in user_options if user.upper().startswith("BA")]
+        regular_users = [user for user in user_options if not user.upper().startswith("BA")]
+        
+        # Sort each group alphabetically and combine with BA users first
+        ba_users.sort()
+        regular_users.sort()
+        sorted_user_options = ba_users + regular_users
+        
+        # Find the current user's index in the sorted list
+        current_index = sorted_user_options.index(st.session_state.active_user) if st.session_state.active_user in sorted_user_options else 0
 
         selected_user = st.selectbox(
             "Switch User",
-            user_options,
+            sorted_user_options,
             index=current_index,
             key="user_switcher"
         )
@@ -696,6 +746,8 @@ def main():
 
                         # Open button
                         if cols[1].button("🔍", key=f"open_{api_name}"):
+                            # No need to clear API-specific keys anymore as we use unique keys per API
+                                
                             st.session_state.current_api = api_name
                             st.rerun()
 
@@ -1114,23 +1166,121 @@ def _render_parameters_section(api):
             st.rerun()
 
 
-def _render_body_section(api):
+def _render_body_section(api_name, api, file_paths):
     """Render the request body section for POST/PUT/PATCH requests"""
-    with st.expander("Request Body", expanded=True):
-        # Show as JSON editor
-        if 'body' not in api:
-            api['body'] = {}
+    # Check if user is BA account and in DEMO environment
+    is_ba_account = st.session_state.username.upper().startswith("BA")
+    is_demo_env = st.session_state.current_env == "DEMO"
+    
+    if is_ba_account and is_demo_env:
+        # Simplified UI for BA users in DEMO environment
+        with st.expander("Request Body", expanded=True):
+            # Initialize body if not exist
+            if 'body' not in api:
+                api['body'] = {"courses": [{"courseId": "", "semesterId": ""}], "numberOfRandom": 10, "topX": 20}
+            
+            # Ensure proper structure exists
+            if not isinstance(api['body'], dict):
+                api['body'] = {}
+            if "courses" not in api['body'] or not isinstance(api['body']["courses"], list) or len(api['body']["courses"]) == 0:
+                api['body']["courses"] = [{"courseId": "", "semesterId": ""}]
+            if "numberOfRandom" not in api['body']:
+                api['body']["numberOfRandom"] = 10
+            if "topX" not in api['body']:
+                api['body']["topX"] = 20
+                
+            # Extract current values
+            courseId = api['body']["courses"][0].get("courseId", "")
+            semesterId = api['body']["courses"][0].get("semesterId", "")
+            
+            # Keep track of original values to detect changes
+            # Use API-specific keys to avoid conflicts when switching between APIs
+            courseId_key = f"original_courseId_{api_name}"
+            semesterId_key = f"original_semesterId_{api_name}"
+            
+            if courseId_key not in st.session_state:
+                st.session_state[courseId_key] = courseId
+            if semesterId_key not in st.session_state:
+                st.session_state[semesterId_key] = semesterId
+            
+            # Simple input fields for CourseId and SemesterId
+            col1, col2 = st.columns(2)
+            with col1:
+                new_courseId = st.text_input("Course ID", value=courseId, key=f"courseId_{api_name}")
+            with col2:
+                new_semesterId = st.text_input("Semester ID", value=semesterId, key=f"semesterId_{api_name}")
+            
+            # Update the body with new values
+            api['body']["courses"][0]["courseId"] = new_courseId
+            api['body']["courses"][0]["semesterId"] = new_semesterId
+            
+            # Auto-save if values have changed
+            courseId_key = f"original_courseId_{api_name}"
+            semesterId_key = f"original_semesterId_{api_name}"
+            
+            if (new_courseId != st.session_state[courseId_key] or 
+                new_semesterId != st.session_state[semesterId_key]):
+                # Save to user's file and update user data
+                st.session_state.apis[api_name] = api.copy()
+                save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"])
+                _save_current_user_data()  # Update the logged_in_users dict
+                
+                # Update original values after saving
+                st.session_state[courseId_key] = new_courseId
+                st.session_state[semesterId_key] = new_semesterId
+                
+                # Show a subtle feedback that saving occurred
+                st.success("Auto-saved changes")
+                time.sleep(0.5)  # Brief delay to show the message
+                st.rerun()  # Refresh UI after auto-save
+            
+            # Display the JSON for reference (read-only)
+            st.code(json.dumps(api['body'], indent=2), language="json")
+    else:
+        # Regular JSON editor for non-BA users or non-DEMO environment
+        with st.expander("Request Body", expanded=True):
+            # Show as JSON editor
+            if 'body' not in api:
+                api['body'] = {}
+                
+            # Keep track of original JSON to detect changes
+            original_json = json.dumps(api['body'], indent=2)
+            body_json_key = f"original_body_json_{api_name}"
+            
+            if body_json_key not in st.session_state:
+                st.session_state[body_json_key] = original_json
+            
+            body_json = st.text_area(
+                "JSON Body", 
+                value=original_json,
+                height=300,
+                key=f"json_body_{api_name}"
+            )
 
-        body_json = st.text_area(
-            "JSON Body", 
-            value=json.dumps(api['body'], indent=2),
-            height=300
-        )
-
-        try:
-            api['body'] = json.loads(body_json)
-        except json.JSONDecodeError:
-            st.error("Invalid JSON format")
+            try:
+                # Parse the JSON
+                parsed_body = json.loads(body_json)
+                api['body'] = parsed_body
+                
+                # Auto-save if JSON has changed and is valid
+                body_json_key = f"original_body_json_{api_name}"
+                
+                if body_json != st.session_state[body_json_key]:
+                    # Save to user's file and update user data
+                    st.session_state.apis[api_name] = api.copy()
+                    save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"])
+                    _save_current_user_data()  # Update the logged_in_users dict
+                    
+                    # Update original JSON after saving
+                    st.session_state[body_json_key] = body_json
+                    
+                    # Show a subtle feedback that saving occurred
+                    st.success("Auto-saved changes")
+                    time.sleep(0.5)  # Brief delay to show the message
+                    st.rerun()  # Refresh UI after auto-save
+                
+            except json.JSONDecodeError:
+                st.error("Invalid JSON format - changes will not be auto-saved")
 
 
 def _render_cookies_section(api):
@@ -1200,30 +1350,29 @@ def _render_action_buttons(api_name, api, file_paths, is_temp):
     # Add a state variable to track when save form should be shown
     if "show_save_form" not in st.session_state:
         st.session_state.show_save_form = False
-
-    # Create columns with adjusted widths to bring buttons closer
-    col_btn1, col_btn2, col_btn3, col_space = st.columns([1, 1, 1, 6])
-
-    # Save API configuration with icon
+    
+    # Use the simplified UI with just Save API and Run API buttons for all users
+    # Create two equal width columns for Save and Run buttons
+    col_btn1, col_btn2 = st.columns(2)
+    
+    # Save API configuration with text
     save_button = col_btn1.button(
-        "💾", # Save icon
+        "Save API",
         key=f"save_btn_{api_name}",
-        help="Save API Configuration"
+        help="Save API Configuration",
+        use_container_width=True
     )
-
-    # Send request with icon
+    
+    # Send request with text
     send_button = col_btn2.button(
-        "▶️", # Play/send icon
+        "Run API",
         key=f"send_btn_{api_name}",
-        help="Send Request"
+        help="Send Request",
+        use_container_width=True,
+        type="primary"  # Make it more prominent
     )
-
-    # Delete API with icon
-    delete_button = col_btn3.button(
-        "🗑️", # Trash icon
-        key=f"delete_btn_{api_name}",
-        help="Delete API"
-    )
+    
+    # Note: Delete functionality is only available in the API list
 
     # Handle save button click
     if save_button:
@@ -1232,10 +1381,8 @@ def _render_action_buttons(api_name, api, file_paths, is_temp):
     # Handle send button click
     if send_button:
         _handle_send_button(api_name, api, file_paths)
-
-    # Handle delete button click
-    if delete_button:
-        _handle_delete_button(api_name, file_paths)
+        
+    # Note: Delete button is now only in the API list, not in the detail panel
 
 
 def _handle_save_button(api_name, api, file_paths, is_temp):
@@ -1510,10 +1657,17 @@ def display_api_tester(api_name, file_paths):
     if api['method'] == "GET":
         _render_parameters_section(api)
 
+    # Check if user is BA account and in DEMO environment
+    is_ba_account = st.session_state.username.upper().startswith("BA")
+    is_demo_env = st.session_state.current_env == "DEMO"
+    
     # Request Body (for POST, PUT, etc.)
     if api['method'] in ["POST", "PUT", "PATCH"]:
-        _render_body_section(api)
-
+        _render_body_section(api_name, api, file_paths)
+    
+    # Add some spacing before buttons for all users
+    st.write("")  # Add some space
+        
     # Action buttons
     _render_action_buttons(api_name, api, file_paths, is_temp)
 

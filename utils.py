@@ -338,9 +338,23 @@ def get_existing_users() -> List[str]:
         os.makedirs(user_dir)
 
     existing_users = []
+    ba_users = []
+    regular_users = []
+    
+    # Separate BA users from regular users
     for item in os.listdir(user_dir):
         if os.path.isdir(os.path.join(user_dir, item)) and item != "adminadmin":
-            existing_users.append(item)
+            if item.upper().startswith("BA"):
+                ba_users.append(item)
+            else:
+                regular_users.append(item)
+    
+    # Sort each group alphabetically
+    ba_users.sort()
+    regular_users.sort()
+    
+    # Combine with BA users first
+    existing_users = ba_users + regular_users
 
     return existing_users
 
