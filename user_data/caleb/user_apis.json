@@ -14,101 +14,22 @@
           "semesterId": "0197e819-2a9f-7971-a123-de5f173bc52e"
         }
       ],
+      "studentIds": [],
       "numberOfRandom": 10,
-      "topX": 22
+      "topX": 20
     },
-    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/processingresult/devrandomacadstanding",
+    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1",
     "path": "",
     "cookies": {
       "_ga": "GA1.1.379208491.1753342019",
       "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
       "CacheUrl": "true",
       "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ8TD5Lqtnr0SaI401JItM5m6dLUa-iCepOwzobGMkhDAIZXB4Boikb4BDWQ4wJOigQQ999Puu8pWqyIbooE-XCWdT6eu4snuC0vBTCd80D_uQ2tzHNyH3cW834oUlDwsvsUPGbAcq2xr-THdcTrweQ_-palfnV7L8N3LJZhSzQoISCJU1qWSVjY0Kdi3jwCn8_GJkZK-ePZ-ES7ZKa0aHUWPtPg_p53jYcpjDRSvRpRRW--EXkA8boO5yIgJ6Kx8L05moGUEi1wfRvUyFfQgHvXHe-q0iOtXirqUqPz_yPfuZUXvr08mXdgJrJFEYucq5OIKUEPIdlRU_u7kG09T7jKkf3zBtZGQ0h01MXiW0GNPsYAGkqFdZEIPpmhp4TU6mv7PiiGJCWrGG6hEiKGn0m75eacJ6I2B0xXSwdQaZP7sEqv0xN_7SHDOpDtHNO9rY270xRkYv0eRqUPFJEP5dsbr-80lfMQ7GYJNvii2HbZZoIM3NpPRqYbhXC1Q3St3iS--xaspPAnoBTnC1JQ_P3f55x8dV-NR_kt25MzKAnR69gF8CWj5bLDrKDS5FjvbxOpZC14cgavbP8kmZuMsYwApTRltD-TAPfqL__42QMdZdEhf78PrctTy1XhAcSJW8eGhcCSdl0Ix3OIIffAQ3KUMV92MPQGc59oCuwuRp85xYwl2Faq__nWm62XFXNr2G0ZxIP640ZeV1DouyXcviGO_qGa7YPLYVDVuL0U5PVW63li1rNw8N8YePMEEIIzgGj_GXc6ALOVOg_393mCyXZH0sHuqOETxYyEWdnOPimj-vx0d9rPTeyDG2DtPA7M11W5JLLILoc2CKiFp_W5nq-C33_7pRFSrp1lGzTG08bGkdxrAbgwTwsQ0nMrwTkIjurcq9GpIuLs-gBz3CFKIpFHcRP7AVFXjBNEnBjcnIUbUNLJSSGXcpbII7OIlSosFoMLvvGTHCVXiYXdo3DGe6JlMfL8F6Uzag5J0XeUAxv1UUYd6Ijgp6uTnaHtLV8RPKBJ-FpoZrM6eFFx5p4G3TWQe1hReklsojE1LjIEOO53iu-1icRQ0L6UcNHwyj4Y5gAreHH16ASz_Akcorx1c3PRnDWwzHY7NJ4-7Q0VW9fAnfjvq9Vzmtce0kKJSsRDb8UW4Wxi4sAdNcvu4TiJkveCZ3j_-PUs0rc0ZxqDA1Xyi2L6ywI9-bwZNSejbQEi6zjZS-UnWwwoQzMCF9MPfC_Jftcje7NA9F10u0V9nz05t_RupVzzr8_oKK3BWsouyVGX_x5ZQDvShVBOIYxoOeUL8KR0wW2bu3uGhraYyMwafA74Q1jm59Uir70J_UvRRQhjG32tqldiRvQ_8GPfGuCZWutt-sS45ordgd04U9OGmobxxtBsjC3S3NjoVw05ClokvV46BIOgA2pM7VZ3wto1F34-VouLiJEiiKYQQCHnSQTkhAAUB93XH4pbtJs9ttTiQgHDHyY6zFCjlW1kmAMitpLZBDh9H7e8mgkPEpC5oe21hpp9Vjy0BiOIeyfWmsAx5NyOV2A-0DPuKY1VoanYswLxNRRtrvHvdGd3jE2w88bXecY9yyqMjVANDwMdXI0QnjDKU5vubZNvEgBCHB0X2bSyuJA_9FE6Hw1lzKTNTALAwKs0xZRbISHCW0F8rYjL1xIbX266IYUxYXlidR58lycJmy2tc58TQQDXBR4XMvEfcVNSRh6TMivKzQPxA8pcc6Fd6nZUohiIMikJ2zCKNXw8PJfEvnWEGOkFVm02CaXcLAudvxT48nvWUuc5DlZhBqF-zwQQGtEpiF0rE_TGvFlH3GfPOHnvnPNU27wkiCElG8kWYRqyo0aihUzsMiRo-9MYR67WWO9PWZ0GJdgvqkwTMh2-2m-USAYkZnLGMOEA3MO5sEaqNJUQIhc42oypgZfOOLWwG89WkTQ-n2vydrfDwfae0-KzA1nr_YOhQ"
-    }
-  },
-  "PA3 SIT": {
-    "url_path": "/processingresult/devrandomacadstanding",
-    "method": "POST",
-    "headers": {
-      "Content-Type": "application/json"
     },
-    "params": {},
-    "body": {
-      "courses": [
-        {
-          "courseId": "01983a9a-f59e-73ca-9013-82e4b50b161b",
-          "semesterId": "0197e819-2a9f-7971-a123-de5f173bc52e"
-        }
-      ],
-      "numberOfRandom": 10,
-      "topX": 20
-    },
-    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1",
-    "path": "",
-    "is_temporary": true,
-    "original_name": "Random Academic Standing",
-    "cookies": {
-      "ga": "GA1.1.379208491.1753342019",
-      "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
-      "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ1LIt3Tt-aXKt4LBqIEuAUBeP8cBtadGpVTx2JQeK13t-QvaFiVrC2D7YbePTOkP4tBIM0_lSB1FKlk8x1xM-rcceaKVw0dnc-rpR-XegC7Ze9S8ZN39tA36yYtqgAq2i1JLXlYtz4q6Yqq2dLLgQnLM5qfU_YSHeqO7VsliY1J1kK1mqwFpI4hJiWpoKg8upYZFQWHVOU5Jyk39soDxJdzqoXePvJwo3oqISF4SXOPb913MvCm8BCsgAY73FOyRBwzj58SrQIlqTC2WMFkmxHDxH7qHKwglnjwFkn6OuTKwfemtlz54hjVyY7EKra9ZZcg33tzn0UaIhAOrFTLhgUFP8aNfnDfM_EJLUo8uhVSOTEWDvQHdTaPqH3sT0137_v4E7AK2bkD5aSSoYrd3NUbn6bIGJGntj31UNLcIfO6Uj_E_jO7JKxskc8-VMOdSLr8LOj3KOYi209MxrK1SoAtkIPCGVDCP4EDABE83qyk2N2IyWrChz0_VJpLJygC8i0MG2E8N0yI4Y2xaBRsN8oR3-g_JSJ8mxHRg9sgoIFLkOaP69j843khffaoDUogIzyPln2DBCfxykQVUyAm9kBP0KdKFWH8GXCg_wuYQW3Pn6KXgkpL6_jtpjgtIIZu5jt9G6Z-WpUoXYpkgjr-Hjgq88xDTDSwl51luBzoJd6JSyqUuUQ1DuU4a9AzazdIgjjcc0Tse282r2V7ji-IV97ezOAMjL0G17wj_-H8528FeiOGPCofwmCTQa4ciHfM-R9ISIv_mH9GYerRb3uRBevWoGzYbbfEa8OF2SKMYf2VNNktouwHT123z6F90o6cVuvqmJ2-DI01x5rNYK1dNFUIieMbqgGRBdO2nOAYbit_mAQzztvVCXJANk1WEEaO3s2UFqOR78N78yigjXYwBWSfCSrwh74rSCzkVNRBDiJOIxjvHR_I6CL6Yr7jzhONZqSoZI8Ha3t18F0OyesKco1gumQkBx5Kb4aVqH-3_nJyFrN8u6DYgz8R5YnQB0Jr8CLRInuS12HCvEvrKZ4jdQJL0LSRLwDvnqy1gDV5PxF4Pz4sJEeM1lvY5ZX4Bt8EMy6EYZtVkLzYtuew8q7EUFMEtzZ7MXi0r_FN8iLqTGCKmxh3HTaZI2v8EC6f0Py0Ls87ypu0GMdpJv4Fjj-01R-WloN0Ge1OeysEEgAblS4IpkMbPKwFSq06ULXI-ndOZm4huFRJbYbwiXQtFv8UeIsWiemYGuJrO6E3ReIGU-zuI_fa7NbzSrSr5SD5qaU2mi-JFhBe5I-dVxtyM9JjTQaprAnnu96NHob35jhFLjvWb5VY-o7lMYqo1MWNAWpWc7Nr-LpGdV3_lESVmViYcz5C645y-swC4XFZYsBvuntUXciYzyOXpca1MKqyBaxMELofKZbg1F3UiFaWSRmVb41CtINFlfUa10ni1HmFzr5vdjkwEzSTT8iBQ4npW8NaEugrjYI0Wolauxgwhzt_jZj1Zqifkk5iooEr189pclgrsNqorV2BSVC1YyF9_rDoRQPzrkSv287IGjO7-Jvcby7Z9kfxJhpFEI4nIxZ6gAg95WFjWAA2ahOOu9_uw0T9Vj3lclvCOq3A9osxVDdcIHi8F3pArKOzXJP35iqqaj891BsyEGsQRH9DLvYrAWtoDPIrBqdeVAGkIcPwXMz1eH7cs56IWdxa8op4yuv3xl74cOfaBmMco9d6MmJxeM8iKS5WNRkSLfM15VZLQDWUsaqi2lCXsQ2xoGukhtdeckd3Lhq7FMNkJcw8tdA6J_kYCICnLGY-iAJFYkXvj1PznJxhkZiphADKJV6iiQtmYehfYm-wUdMySyhnDGRqWqiaDapeqpiAvJ4OMKHvWMZaacljuuv79Qq12vFqqKc5noqmjYcW3_YfOo4EuP2Ezx8GJbvwwbq3_LPfU8UKmCW4JOAPzELT-wxmHMi6-mYVwI0S4"
-    }
-  },
-  "SE3 SIT": {
-    "url_path": "/processingresult/devrandomacadstanding",
-    "method": "POST",
-    "headers": {
-      "Content-Type": "application/json"
-    },
-    "params": {},
-    "body": {
-      "courses": [
-        {
-          "courseId": "01983a9e-f90b-724d-a279-8ce450b0bcb3",
-          "semesterId": "0197e819-2a9f-7971-a123-de5f173bc52e"
-        }
-      ],
-      "numberOfRandom": 15,
-      "topX": 22
-    },
-    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1",
-    "path": "",
-    "is_temporary": true,
-    "original_name": "Random Academic Standing",
-    "cookies": {
-      "ga": "GA1.1.379208491.1753342019",
-      "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
-      "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ1LIt3Tt-aXKt4LBqIEuAUBeP8cBtadGpVTx2JQeK13t-QvaFiVrC2D7YbePTOkP4tBIM0_lSB1FKlk8x1xM-rcceaKVw0dnc-rpR-XegC7Ze9S8ZN39tA36yYtqgAq2i1JLXlYtz4q6Yqq2dLLgQnLM5qfU_YSHeqO7VsliY1J1kK1mqwFpI4hJiWpoKg8upYZFQWHVOU5Jyk39soDxJdzqoXePvJwo3oqISF4SXOPb913MvCm8BCsgAY73FOyRBwzj58SrQIlqTC2WMFkmxHDxH7qHKwglnjwFkn6OuTKwfemtlz54hjVyY7EKra9ZZcg33tzn0UaIhAOrFTLhgUFP8aNfnDfM_EJLUo8uhVSOTEWDvQHdTaPqH3sT0137_v4E7AK2bkD5aSSoYrd3NUbn6bIGJGntj31UNLcIfO6Uj_E_jO7JKxskc8-VMOdSLr8LOj3KOYi209MxrK1SoAtkIPCGVDCP4EDABE83qyk2N2IyWrChz0_VJpLJygC8i0MG2E8N0yI4Y2xaBRsN8oR3-g_JSJ8mxHRg9sgoIFLkOaP69j843khffaoDUogIzyPln2DBCfxykQVUyAm9kBP0KdKFWH8GXCg_wuYQW3Pn6KXgkpL6_jtpjgtIIZu5jt9G6Z-WpUoXYpkgjr-Hjgq88xDTDSwl51luBzoJd6JSyqUuUQ1DuU4a9AzazdIgjjcc0Tse282r2V7ji-IV97ezOAMjL0G17wj_-H8528FeiOGPCofwmCTQa4ciHfM-R9ISIv_mH9GYerRb3uRBevWoGzYbbfEa8OF2SKMYf2VNNktouwHT123z6F90o6cVuvqmJ2-DI01x5rNYK1dNFUIieMbqgGRBdO2nOAYbit_mAQzztvVCXJANk1WEEaO3s2UFqOR78N78yigjXYwBWSfCSrwh74rSCzkVNRBDiJOIxjvHR_I6CL6Yr7jzhONZqSoZI8Ha3t18F0OyesKco1gumQkBx5Kb4aVqH-3_nJyFrN8u6DYgz8R5YnQB0Jr8CLRInuS12HCvEvrKZ4jdQJL0LSRLwDvnqy1gDV5PxF4Pz4sJEeM1lvY5ZX4Bt8EMy6EYZtVkLzYtuew8q7EUFMEtzZ7MXi0r_FN8iLqTGCKmxh3HTaZI2v8EC6f0Py0Ls87ypu0GMdpJv4Fjj-01R-WloN0Ge1OeysEEgAblS4IpkMbPKwFSq06ULXI-ndOZm4huFRJbYbwiXQtFv8UeIsWiemYGuJrO6E3ReIGU-zuI_fa7NbzSrSr5SD5qaU2mi-JFhBe5I-dVxtyM9JjTQaprAnnu96NHob35jhFLjvWb5VY-o7lMYqo1MWNAWpWc7Nr-LpGdV3_lESVmViYcz5C645y-swC4XFZYsBvuntUXciYzyOXpca1MKqyBaxMELofKZbg1F3UiFaWSRmVb41CtINFlfUa10ni1HmFzr5vdjkwEzSTT8iBQ4npW8NaEugrjYI0Wolauxgwhzt_jZj1Zqifkk5iooEr189pclgrsNqorV2BSVC1YyF9_rDoRQPzrkSv287IGjO7-Jvcby7Z9kfxJhpFEI4nIxZ6gAg95WFjWAA2ahOOu9_uw0T9Vj3lclvCOq3A9osxVDdcIHi8F3pArKOzXJP35iqqaj891BsyEGsQRH9DLvYrAWtoDPIrBqdeVAGkIcPwXMz1eH7cs56IWdxa8op4yuv3xl74cOfaBmMco9d6MmJxeM8iKS5WNRkSLfM15VZLQDWUsaqi2lCXsQ2xoGukhtdeckd3Lhq7FMNkJcw8tdA6J_kYCICnLGY-iAJFYkXvj1PznJxhkZiphADKJV6iiQtmYehfYm-wUdMySyhnDGRqWqiaDapeqpiAvJ4OMKHvWMZaacljuuv79Qq12vFqqKc5noqmjYcW3_YfOo4EuP2Ezx8GJbvwwbq3_LPfU8UKmCW4JOAPzELT-wxmHMi6-mYVwI0S4"
-    }
-  },
-  "K25 SIT": {
-    "url_path": "/processingresult/devrandomacadstanding",
-    "method": "POST",
-    "headers": {
-      "Content-Type": "application/json"
-    },
-    "params": {},
-    "body": {
-      "courses": [
-        {
-          "courseId": "01983ab5-f743-7c43-ba97-b27dd09fdaf2",
-          "semesterId": "0197e819-2a9f-7971-a123-de5f173bc52e"
-        }
-      ],
-      "numberOfRandom": 12,
-      "topX": 23
-    },
-    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1",
-    "path": "",
-    "is_temporary": true,
-    "original_name": "Random Academic Standing",
-    "cookies": {
-      "ga": "GA1.1.379208491.1753342019",
-      "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
-      "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ1LIt3Tt-aXKt4LBqIEuAUBeP8cBtadGpVTx2JQeK13t-QvaFiVrC2D7YbePTOkP4tBIM0_lSB1FKlk8x1xM-rcceaKVw0dnc-rpR-XegC7Ze9S8ZN39tA36yYtqgAq2i1JLXlYtz4q6Yqq2dLLgQnLM5qfU_YSHeqO7VsliY1J1kK1mqwFpI4hJiWpoKg8upYZFQWHVOU5Jyk39soDxJdzqoXePvJwo3oqISF4SXOPb913MvCm8BCsgAY73FOyRBwzj58SrQIlqTC2WMFkmxHDxH7qHKwglnjwFkn6OuTKwfemtlz54hjVyY7EKra9ZZcg33tzn0UaIhAOrFTLhgUFP8aNfnDfM_EJLUo8uhVSOTEWDvQHdTaPqH3sT0137_v4E7AK2bkD5aSSoYrd3NUbn6bIGJGntj31UNLcIfO6Uj_E_jO7JKxskc8-VMOdSLr8LOj3KOYi209MxrK1SoAtkIPCGVDCP4EDABE83qyk2N2IyWrChz0_VJpLJygC8i0MG2E8N0yI4Y2xaBRsN8oR3-g_JSJ8mxHRg9sgoIFLkOaP69j843khffaoDUogIzyPln2DBCfxykQVUyAm9kBP0KdKFWH8GXCg_wuYQW3Pn6KXgkpL6_jtpjgtIIZu5jt9G6Z-WpUoXYpkgjr-Hjgq88xDTDSwl51luBzoJd6JSyqUuUQ1DuU4a9AzazdIgjjcc0Tse282r2V7ji-IV97ezOAMjL0G17wj_-H8528FeiOGPCofwmCTQa4ciHfM-R9ISIv_mH9GYerRb3uRBevWoGzYbbfEa8OF2SKMYf2VNNktouwHT123z6F90o6cVuvqmJ2-DI01x5rNYK1dNFUIieMbqgGRBdO2nOAYbit_mAQzztvVCXJANk1WEEaO3s2UFqOR78N78yigjXYwBWSfCSrwh74rSCzkVNRBDiJOIxjvHR_I6CL6Yr7jzhONZqSoZI8Ha3t18F0OyesKco1gumQkBx5Kb4aVqH-3_nJyFrN8u6DYgz8R5YnQB0Jr8CLRInuS12HCvEvrKZ4jdQJL0LSRLwDvnqy1gDV5PxF4Pz4sJEeM1lvY5ZX4Bt8EMy6EYZtVkLzYtuew8q7EUFMEtzZ7MXi0r_FN8iLqTGCKmxh3HTaZI2v8EC6f0Py0Ls87ypu0GMdpJv4Fjj-01R-WloN0Ge1OeysEEgAblS4IpkMbPKwFSq06ULXI-ndOZm4huFRJbYbwiXQtFv8UeIsWiemYGuJrO6E3ReIGU-zuI_fa7NbzSrSr5SD5qaU2mi-JFhBe5I-dVxtyM9JjTQaprAnnu96NHob35jhFLjvWb5VY-o7lMYqo1MWNAWpWc7Nr-LpGdV3_lESVmViYcz5C645y-swC4XFZYsBvuntUXciYzyOXpca1MKqyBaxMELofKZbg1F3UiFaWSRmVb41CtINFlfUa10ni1HmFzr5vdjkwEzSTT8iBQ4npW8NaEugrjYI0Wolauxgwhzt_jZj1Zqifkk5iooEr189pclgrsNqorV2BSVC1YyF9_rDoRQPzrkSv287IGjO7-Jvcby7Z9kfxJhpFEI4nIxZ6gAg95WFjWAA2ahOOu9_uw0T9Vj3lclvCOq3A9osxVDdcIHi8F3pArKOzXJP35iqqaj891BsyEGsQRH9DLvYrAWtoDPIrBqdeVAGkIcPwXMz1eH7cs56IWdxa8op4yuv3xl74cOfaBmMco9d6MmJxeM8iKS5WNRkSLfM15VZLQDWUsaqi2lCXsQ2xoGukhtdeckd3Lhq7FMNkJcw8tdA6J_kYCICnLGY-iAJFYkXvj1PznJxhkZiphADKJV6iiQtmYehfYm-wUdMySyhnDGRqWqiaDapeqpiAvJ4OMKHvWMZaacljuuv79Qq12vFqqKc5noqmjYcW3_YfOo4EuP2Ezx8GJbvwwbq3_LPfU8UKmCW4JOAPzELT-wxmHMi6-mYVwI0S4"
-    }
+    "module": "EX"
   },
   "Dev populate course": {
-    "url": "https://admin-tp-esms-demo.dev.edutechonline.org/api/assessment/api/v1/ProcessingResult/DEVPopulateCourseSemesterResult",
+    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/ProcessingResult/DEVPopulateCourseSemesterResult",
     "path": "/ProcessingResult/DEVPopulateCourseSemesterResult",
     "method": "POST",
     "headers": {
@@ -125,31 +46,36 @@
       "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
       "CacheUrl": "true",
       "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ8TD5Lqtnr0SaI401JItM5m6dLUa-iCepOwzobGMkhDAIZXB4Boikb4BDWQ4wJOigQQ999Puu8pWqyIbooE-XCWdT6eu4snuC0vBTCd80D_uQ2tzHNyH3cW834oUlDwsvsUPGbAcq2xr-THdcTrweQ_-palfnV7L8N3LJZhSzQoISCJU1qWSVjY0Kdi3jwCn8_GJkZK-ePZ-ES7ZKa0aHUWPtPg_p53jYcpjDRSvRpRRW--EXkA8boO5yIgJ6Kx8L05moGUEi1wfRvUyFfQgHvXHe-q0iOtXirqUqPz_yPfuZUXvr08mXdgJrJFEYucq5OIKUEPIdlRU_u7kG09T7jKkf3zBtZGQ0h01MXiW0GNPsYAGkqFdZEIPpmhp4TU6mv7PiiGJCWrGG6hEiKGn0m75eacJ6I2B0xXSwdQaZP7sEqv0xN_7SHDOpDtHNO9rY270xRkYv0eRqUPFJEP5dsbr-80lfMQ7GYJNvii2HbZZoIM3NpPRqYbhXC1Q3St3iS--xaspPAnoBTnC1JQ_P3f55x8dV-NR_kt25MzKAnR69gF8CWj5bLDrKDS5FjvbxOpZC14cgavbP8kmZuMsYwApTRltD-TAPfqL__42QMdZdEhf78PrctTy1XhAcSJW8eGhcCSdl0Ix3OIIffAQ3KUMV92MPQGc59oCuwuRp85xYwl2Faq__nWm62XFXNr2G0ZxIP640ZeV1DouyXcviGO_qGa7YPLYVDVuL0U5PVW63li1rNw8N8YePMEEIIzgGj_GXc6ALOVOg_393mCyXZH0sHuqOETxYyEWdnOPimj-vx0d9rPTeyDG2DtPA7M11W5JLLILoc2CKiFp_W5nq-C33_7pRFSrp1lGzTG08bGkdxrAbgwTwsQ0nMrwTkIjurcq9GpIuLs-gBz3CFKIpFHcRP7AVFXjBNEnBjcnIUbUNLJSSGXcpbII7OIlSosFoMLvvGTHCVXiYXdo3DGe6JlMfL8F6Uzag5J0XeUAxv1UUYd6Ijgp6uTnaHtLV8RPKBJ-FpoZrM6eFFx5p4G3TWQe1hReklsojE1LjIEOO53iu-1icRQ0L6UcNHwyj4Y5gAreHH16ASz_Akcorx1c3PRnDWwzHY7NJ4-7Q0VW9fAnfjvq9Vzmtce0kKJSsRDb8UW4Wxi4sAdNcvu4TiJkveCZ3j_-PUs0rc0ZxqDA1Xyi2L6ywI9-bwZNSejbQEi6zjZS-UnWwwoQzMCF9MPfC_Jftcje7NA9F10u0V9nz05t_RupVzzr8_oKK3BWsouyVGX_x5ZQDvShVBOIYxoOeUL8KR0wW2bu3uGhraYyMwafA74Q1jm59Uir70J_UvRRQhjG32tqldiRvQ_8GPfGuCZWutt-sS45ordgd04U9OGmobxxtBsjC3S3NjoVw05ClokvV46BIOgA2pM7VZ3wto1F34-VouLiJEiiKYQQCHnSQTkhAAUB93XH4pbtJs9ttTiQgHDHyY6zFCjlW1kmAMitpLZBDh9H7e8mgkPEpC5oe21hpp9Vjy0BiOIeyfWmsAx5NyOV2A-0DPuKY1VoanYswLxNRRtrvHvdGd3jE2w88bXecY9yyqMjVANDwMdXI0QnjDKU5vubZNvEgBCHB0X2bSyuJA_9FE6Hw1lzKTNTALAwKs0xZRbISHCW0F8rYjL1xIbX266IYUxYXlidR58lycJmy2tc58TQQDXBR4XMvEfcVNSRh6TMivKzQPxA8pcc6Fd6nZUohiIMikJ2zCKNXw8PJfEvnWEGOkFVm02CaXcLAudvxT48nvWUuc5DlZhBqF-zwQQGtEpiF0rE_TGvFlH3GfPOHnvnPNU27wkiCElG8kWYRqyo0aihUzsMiRo-9MYR67WWO9PWZ0GJdgvqkwTMh2-2m-USAYkZnLGMOEA3MO5sEaqNJUQIhc42oypgZfOOLWwG89WkTQ-n2vydrfDwfae0-KzA1nr_YOhQ"
-    }
+    },
+    "module": "EX"
   },
-  "PA2 Oct": {
-    "url_path": "/processingresult/devrandomacadstanding",
+  "temp_Subject Offering": {
+    "url_path": "/StudentUserWrite/DEVEXUpdateStudentUser",
     "method": "POST",
+    "module": "AD",
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Cookie": "_ga=GA1.1.379208491.1753342019; _ga_6F011EZW22=GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0; CacheUrl=true; Cookies=e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ8TD5Lqtnr0SaI401JItM5m6dLUa-iCepOwzobGMkhDAIZXB4Boikb4BDWQ4wJOigQQ999Puu8pWqyIbooE-XCWdT6eu4snuC0vBTCd80D_uQ2tzHNyH3cW834oUlDwsvsUPGbAcq2xr-THdcTrweQ_-palfnV7L8N3LJZhSzQoISCJU1qWSVjY0Kdi3jwCn8_GJkZK-ePZ-ES7ZKa0aHUWPtPg_p53jYcpjDRSvRpRRW--EXkA8boO5yIgJ6Kx8L05moGUEi1wfRvUyFfQgHvXHe-q0iOtXirqUqPz_yPfuZUXvr08mXdgJrJFEYucq5OIKUEPIdlRU_u7kG09T7jKkf3zBtZGQ0h01MXiW0GNPsYAGkqFdZEIPpmhp4TU6mv7PiiGJCWrGG6hEiKGn0m75eacJ6I2B0xXSwdQaZP7sEqv0xN_7SHDOpDtHNO9rY270xRkYv0eRqUPFJEP5dsbr-80lfMQ7GYJNvii2HbZZoIM3NpPRqYbhXC1Q3St3iS--xaspPAnoBTnC1JQ_P3f55x8dV-NR_kt25MzKAnR69gF8CWj5bLDrKDS5FjvbxOpZC14cgavbP8kmZuMsYwApTRltD-TAPfqL__42QMdZdEhf78PrctTy1XhAcSJW8eGhcCSdl0Ix3OIIffAQ3KUMV92MPQGc59oCuwuRp85xYwl2Faq__nWm62XFXNr2G0ZxIP640ZeV1DouyXcviGO_qGa7YPLYVDVuL0U5PVW63li1rNw8N8YePMEEIIzgGj_GXc6ALOVOg_393mCyXZH0sHuqOETxYyEWdnOPimj-vx0d9rPTeyDG2DtPA7M11W5JLLILoc2CKiFp_W5nq-C33_7pRFSrp1lGzTG08bGkdxrAbgwTwsQ0nMrwTkIjurcq9GpIuLs-gBz3CFKIpFHcRP7AVFXjBNEnBjcnIUbUNLJSSGXcpbII7OIlSosFoMLvvGTHCVXiYXdo3DGe6JlMfL8F6Uzag5J0XeUAxv1UUYd6Ijgp6uTnaHtLV8RPKBJ-FpoZrM6eFFx5p4G3TWQe1hReklsojE1LjIEOO53iu-1icRQ0L6UcNHwyj4Y5gAreHH16ASz_Akcorx1c3PRnDWwzHY7NJ4-7Q0VW9fAnfjvq9Vzmtce0kKJSsRDb8UW4Wxi4sAdNcvu4TiJkveCZ3j_-PUs0rc0ZxqDA1Xyi2L6ywI9-bwZNSejbQEi6zjZS-UnWwwoQzMCF9MPfC_Jftcje7NA9F10u0V9nz05t_RupVzzr8_oKK3BWsouyVGX_x5ZQDvShVBOIYxoOeUL8KR0wW2bu3uGhraYyMwafA74Q1jm59Uir70J_UvRRQhjG32tqldiRvQ_8GPfGuCZWutt-sS45ordgd04U9OGmobxxtBsjC3S3NjoVw05ClokvV46BIOgA2pM7VZ3wto1F34-VouLiJEiiKYQQCHnSQTkhAAUB93XH4pbtJs9ttTiQgHDHyY6zFCjlW1kmAMitpLZBDh9H7e8mgkPEpC5oe21hpp9Vjy0BiOIeyfWmsAx5NyOV2A-0DPuKY1VoanYswLxNRRtrvHvdGd3jE2w88bXecY9yyqMjVANDwMdXI0QnjDKU5vubZNvEgBCHB0X2bSyuJA_9FE6Hw1lzKTNTALAwKs0xZRbISHCW0F8rYjL1xIbX266IYUxYXlidR58lycJmy2tc58TQQDXBR4XMvEfcVNSRh6TMivKzQPxA8pcc6Fd6nZUohiIMikJ2zCKNXw8PJfEvnWEGOkFVm02CaXcLAudvxT48nvWUuc5DlZhBqF-zwQQGtEpiF0rE_TGvFlH3GfPOHnvnPNU27wkiCElG8kWYRqyo0aihUzsMiRo-9MYR67WWO9PWZ0GJdgvqkwTMh2-2m-USAYkZnLGMOEA3MO5sEaqNJUQIhc42oypgZfOOLWwG89WkTQ-n2vydrfDwfae0-KzA1nr_YOhQ"
     },
     "params": {},
     "body": {
-      "courses": [
+      "students": [
         {
-          "courseId": "01983a96-dea6-7006-9616-299790040d2f",
-          "semesterId": "0197e819-2a9f-7971-a123-de5f173bc52e"
+          "studentId": "e9cd949a-1272-4e00-9160-431e69696c5e",
+          "futureStage": 3,
+          "futureCourseVersionCode": "AT8-32"
         }
-      ],
-      "numberOfRandom": 10,
-      "topX": 22
+      ]
     },
-    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/processingresult/devrandomacadstanding",
-    "path": "",
+    "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/administration/api/v1/StudentUserWrite/DEVEXUpdateStudentUser",
+    "path": "/StudentUserWrite/DEVEXUpdateStudentUser",
+    "is_temporary": true,
+    "original_name": "Subject Offering",
     "cookies": {
-      "ga": "GA1.1.379208491.1753342019",
+      "_ga": "GA1.1.379208491.1753342019",
       "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
-      "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ1LIt3Tt-aXKt4LBqIEuAUBeP8cBtadGpVTx2JQeK13t-QvaFiVrC2D7YbePTOkP4tBIM0_lSB1FKlk8x1xM-rcceaKVw0dnc-rpR-XegC7Ze9S8ZN39tA36yYtqgAq2i1JLXlYtz4q6Yqq2dLLgQnLM5qfU_YSHeqO7VsliY1J1kK1mqwFpI4hJiWpoKg8upYZFQWHVOU5Jyk39soDxJdzqoXePvJwo3oqISF4SXOPb913MvCm8BCsgAY73FOyRBwzj58SrQIlqTC2WMFkmxHDxH7qHKwglnjwFkn6OuTKwfemtlz54hjVyY7EKra9ZZcg33tzn0UaIhAOrFTLhgUFP8aNfnDfM_EJLUo8uhVSOTEWDvQHdTaPqH3sT0137_v4E7AK2bkD5aSSoYrd3NUbn6bIGJGntj31UNLcIfO6Uj_E_jO7JKxskc8-VMOdSLr8LOj3KOYi209MxrK1SoAtkIPCGVDCP4EDABE83qyk2N2IyWrChz0_VJpLJygC8i0MG2E8N0yI4Y2xaBRsN8oR3-g_JSJ8mxHRg9sgoIFLkOaP69j843khffaoDUogIzyPln2DBCfxykQVUyAm9kBP0KdKFWH8GXCg_wuYQW3Pn6KXgkpL6_jtpjgtIIZu5jt9G6Z-WpUoXYpkgjr-Hjgq88xDTDSwl51luBzoJd6JSyqUuUQ1DuU4a9AzazdIgjjcc0Tse282r2V7ji-IV97ezOAMjL0G17wj_-H8528FeiOGPCofwmCTQa4ciHfM-R9ISIv_mH9GYerRb3uRBevWoGzYbbfEa8OF2SKMYf2VNNktouwHT123z6F90o6cVuvqmJ2-DI01x5rNYK1dNFUIieMbqgGRBdO2nOAYbit_mAQzztvVCXJANk1WEEaO3s2UFqOR78N78yigjXYwBWSfCSrwh74rSCzkVNRBDiJOIxjvHR_I6CL6Yr7jzhONZqSoZI8Ha3t18F0OyesKco1gumQkBx5Kb4aVqH-3_nJyFrN8u6DYgz8R5YnQB0Jr8CLRInuS12HCvEvrKZ4jdQJL0LSRLwDvnqy1gDV5PxF4Pz4sJEeM1lvY5ZX4Bt8EMy6EYZtVkLzYtuew8q7EUFMEtzZ7MXi0r_FN8iLqTGCKmxh3HTaZI2v8EC6f0Py0Ls87ypu0GMdpJv4Fjj-01R-WloN0Ge1OeysEEgAblS4IpkMbPKwFSq06ULXI-ndOZm4huFRJbYbwiXQtFv8UeIsWiemYGuJrO6E3ReIGU-zuI_fa7NbzSrSr5SD5qaU2mi-JFhBe5I-dVxtyM9JjTQaprAnnu96NHob35jhFLjvWb5VY-o7lMYqo1MWNAWpWc7Nr-LpGdV3_lESVmViYcz5C645y-swC4XFZYsBvuntUXciYzyOXpca1MKqyBaxMELofKZbg1F3UiFaWSRmVb41CtINFlfUa10ni1HmFzr5vdjkwEzSTT8iBQ4npW8NaEugrjYI0Wolauxgwhzt_jZj1Zqifkk5iooEr189pclgrsNqorV2BSVC1YyF9_rDoRQPzrkSv287IGjO7-Jvcby7Z9kfxJhpFEI4nIxZ6gAg95WFjWAA2ahOOu9_uw0T9Vj3lclvCOq3A9osxVDdcIHi8F3pArKOzXJP35iqqaj891BsyEGsQRH9DLvYrAWtoDPIrBqdeVAGkIcPwXMz1eH7cs56IWdxa8op4yuv3xl74cOfaBmMco9d6MmJxeM8iKS5WNRkSLfM15VZLQDWUsaqi2lCXsQ2xoGukhtdeckd3Lhq7FMNkJcw8tdA6J_kYCICnLGY-iAJFYkXvj1PznJxhkZiphADKJV6iiQtmYehfYm-wUdMySyhnDGRqWqiaDapeqpiAvJ4OMKHvWMZaacljuuv79Qq12vFqqKc5noqmjYcW3_YfOo4EuP2Ezx8GJbvwwbq3_LPfU8UKmCW4JOAPzELT-wxmHMi6-mYVwI0S4"
+      "CacheUrl": "true",
+      "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQ8TD5Lqtnr0SaI401JItM5m6dLUa-iCepOwzobGMkhDAIZXB4Boikb4BDWQ4wJOigQQ999Puu8pWqyIbooE-XCWdT6eu4snuC0vBTCd80D_uQ2tzHNyH3cW834oUlDwsvsUPGbAcq2xr-THdcTrweQ_-palfnV7L8N3LJZhSzQoISCJU1qWSVjY0Kdi3jwCn8_GJkZK-ePZ-ES7ZKa0aHUWPtPg_p53jYcpjDRSvRpRRW--EXkA8boO5yIgJ6Kx8L05moGUEi1wfRvUyFfQgHvXHe-q0iOtXirqUqPz_yPfuZUXvr08mXdgJrJFEYucq5OIKUEPIdlRU_u7kG09T7jKkf3zBtZGQ0h01MXiW0GNPsYAGkqFdZEIPpmhp4TU6mv7PiiGJCWrGG6hEiKGn0m75eacJ6I2B0xXSwdQaZP7sEqv0xN_7SHDOpDtHNO9rY270xRkYv0eRqUPFJEP5dsbr-80lfMQ7GYJNvii2HbZZoIM3NpPRqYbhXC1Q3St3iS--xaspPAnoBTnC1JQ_P3f55x8dV-NR_kt25MzKAnR69gF8CWj5bLDrKDS5FjvbxOpZC14cgavbP8kmZuMsYwApTRltD-TAPfqL__42QMdZdEhf78PrctTy1XhAcSJW8eGhcCSdl0Ix3OIIffAQ3KUMV92MPQGc59oCuwuRp85xYwl2Faq__nWm62XFXNr2G0ZxIP640ZeV1DouyXcviGO_qGa7YPLYVDVuL0U5PVW63li1rNw8N8YePMEEIIzgGj_GXc6ALOVOg_393mCyXZH0sHuqOETxYyEWdnOPimj-vx0d9rPTeyDG2DtPA7M11W5JLLILoc2CKiFp_W5nq-C33_7pRFSrp1lGzTG08bGkdxrAbgwTwsQ0nMrwTkIjurcq9GpIuLs-gBz3CFKIpFHcRP7AVFXjBNEnBjcnIUbUNLJSSGXcpbII7OIlSosFoMLvvGTHCVXiYXdo3DGe6JlMfL8F6Uzag5J0XeUAxv1UUYd6Ijgp6uTnaHtLV8RPKBJ-FpoZrM6eFFx5p4G3TWQe1hReklsojE1LjIEOO53iu-1icRQ0L6UcNHwyj4Y5gAreHH16ASz_Akcorx1c3PRnDWwzHY7NJ4-7Q0VW9fAnfjvq9Vzmtce0kKJSsRDb8UW4Wxi4sAdNcvu4TiJkveCZ3j_-PUs0rc0ZxqDA1Xyi2L6ywI9-bwZNSejbQEi6zjZS-UnWwwoQzMCF9MPfC_Jftcje7NA9F10u0V9nz05t_RupVzzr8_oKK3BWsouyVGX_x5ZQDvShVBOIYxoOeUL8KR0wW2bu3uGhraYyMwafA74Q1jm59Uir70J_UvRRQhjG32tqldiRvQ_8GPfGuCZWutt-sS45ordgd04U9OGmobxxtBsjC3S3NjoVw05ClokvV46BIOgA2pM7VZ3wto1F34-VouLiJEiiKYQQCHnSQTkhAAUB93XH4pbtJs9ttTiQgHDHyY6zFCjlW1kmAMitpLZBDh9H7e8mgkPEpC5oe21hpp9Vjy0BiOIeyfWmsAx5NyOV2A-0DPuKY1VoanYswLxNRRtrvHvdGd3jE2w88bXecY9yyqMjVANDwMdXI0QnjDKU5vubZNvEgBCHB0X2bSyuJA_9FE6Hw1lzKTNTALAwKs0xZRbISHCW0F8rYjL1xIbX266IYUxYXlidR58lycJmy2tc58TQQDXBR4XMvEfcVNSRh6TMivKzQPxA8pcc6Fd6nZUohiIMikJ2zCKNXw8PJfEvnWEGOkFVm02CaXcLAudvxT48nvWUuc5DlZhBqF-zwQQGtEpiF0rE_TGvFlH3GfPOHnvnPNU27wkiCElG8kWYRqyo0aihUzsMiRo-9MYR67WWO9PWZ0GJdgvqkwTMh2-2m-USAYkZnLGMOEA3MO5sEaqNJUQIhc42oypgZfOOLWwG89WkTQ-n2vydrfDwfae0-KzA1nr_YOhQ"
     }
   }
 }

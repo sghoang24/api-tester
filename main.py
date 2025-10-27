@@ -13,7 +13,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_client(env):
+def get_client(env, module: str = "EX"):
     """Get client."""
     if env == "DAI":
         cookies = DAI_COOKIES
@@ -22,6 +22,10 @@ def get_client(env):
     else:
         cookies = UAT_COOKIES
     base_url = get_base_url(env)
+    if module == "EX":
+        base_url += "/assessment/api/v1"
+    elif module == "AD":
+        base_url += "/administration/api/v1"
     return HTTPClient(base_url, cookies=cookies)
 
 
@@ -334,6 +338,7 @@ if __name__ == "__main__":
         # "DAI",
         # "SIT",
         # "UAT"
+        module="AD"
     )
 
     # get_subject_components(client)

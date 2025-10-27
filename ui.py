@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import time
 import os
-from constants import DAI_COOKIES, SIT_COOKIES, UAT_COOKIES, DAI_BASE_URL, SIT_BASE_URL, UAT_BASE_URL
+import datetime
 from utils import (
     get_base_url, 
     get_current_base_url, 
@@ -99,18 +99,21 @@ def show_multi_user_login():
         st.subheader("Currently Logged In Users")
         cols = st.columns(len(st.session_state.logged_in_users) + 1)
         
-        # Sort users to prioritize BA users
+        # Sort users to prioritize QA and BA users
+        qa_users = [(username, user_data) for username, user_data in st.session_state.logged_in_users.items() 
+                   if username.upper().startswith("QA")]
         ba_users = [(username, user_data) for username, user_data in st.session_state.logged_in_users.items() 
                    if username.upper().startswith("BA")]
         regular_users = [(username, user_data) for username, user_data in st.session_state.logged_in_users.items() 
-                        if not username.upper().startswith("BA")]
+                        if not username.upper().startswith("QA") and not username.upper().startswith("BA")]
         
         # Sort each group alphabetically
+        qa_users.sort(key=lambda x: x[0])
         ba_users.sort(key=lambda x: x[0])
         regular_users.sort(key=lambda x: x[0])
         
-        # Combine with BA users first
-        sorted_users = ba_users + regular_users
+        # Combine with QA users first, then BA users, then regular users
+        sorted_users = qa_users + ba_users + regular_users
         
         for i, (username, user_data) in enumerate(sorted_users):
             with cols[i]:
@@ -201,18 +204,21 @@ def show_multi_user_login():
     if st.session_state.logged_in_users:
         if st.button("🚀 Start Using API Tester", type="primary"):
             if not st.session_state.active_user:
-                # Prioritize BA users when selecting the first active user
+                # Prioritize QA users, then BA users when selecting the first active user
+                qa_users = [user for user in st.session_state.logged_in_users.keys() 
+                           if user.upper().startswith("QA")]
                 ba_users = [user for user in st.session_state.logged_in_users.keys() 
                            if user.upper().startswith("BA")]
                 regular_users = [user for user in st.session_state.logged_in_users.keys() 
-                                if not user.upper().startswith("BA")]
+                                if not user.upper().startswith("QA") and not user.upper().startswith("BA")]
                 
-                # Sort each group and combine with BA users first
+                # Sort each group and combine with QA users first, then BA users
+                qa_users.sort()
                 ba_users.sort()
                 regular_users.sort()
-                sorted_users = ba_users + regular_users
+                sorted_users = qa_users + ba_users + regular_users
                 
-                # Set first user as active (BA user if available)
+                # Set first user as active (QA user if available, then BA user)
                 st.session_state.active_user = sorted_users[0]
                 _load_user_data(st.session_state.active_user)
 
@@ -242,12 +248,18 @@ def _handle_multi_user_login(username: str, is_admin: bool):
         'cookies_config': {}  # Start with empty cookies - will be loaded properly in _load_user_data
     }
 
-    # Set as active user if it's the first one, if no active user, or if it's a BA user
+    # Set as active user if it's the first one, if no active user, or if it's a QA/BA user
     if not st.session_state.active_user or len(st.session_state.logged_in_users) == 1:
         st.session_state.active_user = username
         _load_user_data(username)
-    # If the new user is a BA user and the current active user is not, switch to the BA user
-    elif username.upper().startswith("BA") and not st.session_state.active_user.upper().startswith("BA"):
+    # If the new user is a QA user and the current active user is not, switch to the QA user
+    elif username.upper().startswith("QA") and not st.session_state.active_user.upper().startswith("QA"):
+        st.session_state.active_user = username
+        _load_user_data(username)
+    # If the new user is a BA user and the current active user is not QA or BA, switch to the BA user
+    elif (username.upper().startswith("BA") and 
+          not st.session_state.active_user.upper().startswith("QA") and 
+          not st.session_state.active_user.upper().startswith("BA")):
         st.session_state.active_user = username
         _load_user_data(username)
 
@@ -272,6 +284,15 @@ def _load_user_data(username: str):
         try:
             # Always load APIs for any user (including admin)
             user_data['apis'] = load_user_apis(user_data['file_paths']["USER_APIS_FILE"])
+            
+            # Migration: Add module field to existing APIs that don't have it (default to EX)
+            for api_name, api_config in user_data['apis'].items():
+                if 'module' not in api_config:
+                    api_config['module'] = 'EX'
+            
+            # Save the updated APIs with module information
+            if user_data['apis']:
+                save_user_apis(user_data['apis'], user_data['file_paths']["USER_APIS_FILE"])
         except Exception as e:
             st.error(f"Error loading user APIs for {username}: {str(e)}")
             user_data['apis'] = {}
@@ -340,18 +361,21 @@ def _logout_user(username: str):
         # If this was the active user, switch to another user or clear session
         if st.session_state.active_user == username:
             if st.session_state.logged_in_users:
-                # Prioritize BA users when selecting a new active user
+                # Prioritize QA users, then BA users when selecting a new active user
+                qa_users = [user for user in st.session_state.logged_in_users.keys() 
+                           if user.upper().startswith("QA")]
                 ba_users = [user for user in st.session_state.logged_in_users.keys() 
                            if user.upper().startswith("BA")]
                 regular_users = [user for user in st.session_state.logged_in_users.keys() 
-                                if not user.upper().startswith("BA")]
+                                if not user.upper().startswith("QA") and not user.upper().startswith("BA")]
                 
-                # Sort each group and combine with BA users first
+                # Sort each group and combine with QA users first, then BA users
+                qa_users.sort()
                 ba_users.sort()
                 regular_users.sort()
-                sorted_users = ba_users + regular_users
+                sorted_users = qa_users + ba_users + regular_users
                 
-                # Switch to first available user (BA user if available)
+                # Switch to first available user (QA user if available, then BA user)
                 new_active_user = sorted_users[0]
                 st.session_state.active_user = new_active_user
                 _load_user_data(new_active_user)
@@ -387,7 +411,7 @@ def show_admin_panel():
     environments = load_environments_config()
     
     # Create tabs for different admin functions
-    env_tab, cookie_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration"])
+    env_tab, cookie_tab, file_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration", "📁 File Management"])
     
     with env_tab:
         st.subheader("Environment Management")
@@ -552,6 +576,184 @@ def show_admin_panel():
         else:
             st.warning("No enabled environments found. Please enable at least one environment in the Environment Management tab.")
 
+    with file_tab:
+        st.subheader("File Management")
+        st.info("Manage uploaded Excel files from all users.")
+        
+        upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+        if os.path.exists(upload_dir):
+            all_files = [f for f in os.listdir(upload_dir) if f.endswith(('.xlsx', '.xls'))]
+            
+            if all_files:
+                st.success(f"📊 Found {len(all_files)} uploaded file(s) in total")
+                
+                # Summary stats
+                total_size = 0
+                for file_name in all_files:
+                    try:
+                        file_path = os.path.join(upload_dir, file_name)
+                        total_size += os.path.getsize(file_path)
+                    except:
+                        pass
+                
+                total_size_mb = round(total_size / (1024 * 1024), 2)
+                st.info(f"💾 Total storage used: {total_size_mb} MB")
+                
+                # Group files by user
+                user_files = {}
+                for file_name in all_files:
+                    # Extract username from filename (username_apiname_timestamp.extension)
+                    parts = file_name.split('_')
+                    if len(parts) >= 2:
+                        username_part = parts[0]
+                        if username_part not in user_files:
+                            user_files[username_part] = []
+                        user_files[username_part].append(file_name)
+                    else:
+                        # Files that don't follow naming convention
+                        if 'other' not in user_files:
+                            user_files['other'] = []
+                        user_files['other'].append(file_name)
+                
+                # Sort users - prioritize problematic ones
+                sorted_users = sorted(user_files.keys())
+                
+                for user in sorted_users:
+                    files = user_files[user]
+                    user_size = 0
+                    for file_name in files:
+                        try:
+                            file_path = os.path.join(upload_dir, file_name)
+                            user_size += os.path.getsize(file_path)
+                        except:
+                            pass
+                    user_size_mb = round(user_size / (1024 * 1024), 2)
+                    
+                    with st.expander(f"👤 **{user}** ({len(files)} files, {user_size_mb} MB)", expanded=False):
+                        
+                        for file_name in sorted(files, reverse=True):  # Most recent first
+                            file_path = os.path.join(upload_dir, file_name)
+                            try:
+                                file_size = os.path.getsize(file_path)
+                                file_size_kb = round(file_size / 1024, 2)
+                                
+                                # Extract timestamp from filename
+                                try:
+                                    name_parts = file_name.split('_')
+                                    if len(name_parts) >= 3:
+                                        date_part = name_parts[-2]
+                                        time_part = name_parts[-1].split('.')[0]
+                                        timestamp_str = f"{date_part}_{time_part}"
+                                        timestamp = datetime.datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
+                                        formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                                    else:
+                                        formatted_time = "Unknown time"
+                                except:
+                                    formatted_time = "Unknown time"
+                                
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.text(f"📄 {file_name}")
+                                    st.caption(f"Uploaded: {formatted_time} | Size: {file_size_kb} KB")
+                                
+                                with col2:
+                                    if st.button("🗑️", key=f"admin_delete_{file_name}", help="Delete file"):
+                                        try:
+                                            os.remove(file_path)
+                                            st.success(f"✅ Deleted {file_name}")
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"❌ Error deleting file: {str(e)}")
+                            except Exception as e:
+                                st.error(f"Error accessing file {file_name}: {str(e)}")
+                        
+                        # Delete all files for this user
+                        if st.button(f"🗑️ Delete all files for {user}", key=f"delete_user_files_{user}"):
+                            deleted_count = 0
+                            failed_count = 0
+                            
+                            for file_name in files:
+                                try:
+                                    file_path = os.path.join(upload_dir, file_name)
+                                    os.remove(file_path)
+                                    deleted_count += 1
+                                except Exception:
+                                    failed_count += 1
+                            
+                            if deleted_count > 0:
+                                st.success(f"✅ Deleted {deleted_count} file(s) for {user}")
+                            if failed_count > 0:
+                                st.error(f"❌ Failed to delete {failed_count} file(s)")
+                            
+                            if deleted_count > 0:
+                                st.rerun()
+                
+                st.markdown("---")
+                
+                # Bulk operations
+                st.subheader("🗑️ Bulk Operations")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Delete all files
+                    if st.button("🗑️ Delete ALL Files", key="admin_delete_all_files", type="secondary"):
+                        deleted_count = 0
+                        failed_count = 0
+                        
+                        for file_name in all_files:
+                            try:
+                                file_path = os.path.join(upload_dir, file_name)
+                                os.remove(file_path)
+                                deleted_count += 1
+                            except Exception:
+                                failed_count += 1
+                        
+                        if deleted_count > 0:
+                            st.success(f"✅ Deleted {deleted_count} file(s)")
+                        if failed_count > 0:
+                            st.error(f"❌ Failed to delete {failed_count} file(s)")
+                        
+                        if deleted_count > 0:
+                            st.rerun()
+                
+                with col2:
+                    # Delete files older than X days
+                    days_old = st.number_input("Delete files older than (days):", min_value=1, max_value=365, value=30)
+                    if st.button(f"🗑️ Delete files older than {days_old} days", key="delete_old_files"):
+                        import datetime as dt
+                        cutoff_date = dt.datetime.now() - dt.timedelta(days=days_old)
+                        
+                        deleted_count = 0
+                        failed_count = 0
+                        
+                        for file_name in all_files:
+                            try:
+                                file_path = os.path.join(upload_dir, file_name)
+                                file_mtime = dt.datetime.fromtimestamp(os.path.getmtime(file_path))
+                                
+                                if file_mtime < cutoff_date:
+                                    os.remove(file_path)
+                                    deleted_count += 1
+                            except Exception:
+                                failed_count += 1
+                        
+                        if deleted_count > 0:
+                            st.success(f"✅ Deleted {deleted_count} old file(s)")
+                        elif failed_count > 0:
+                            st.error(f"❌ Failed to delete {failed_count} file(s)")
+                        else:
+                            st.info("No files older than the specified period found")
+                        
+                        if deleted_count > 0:
+                            st.rerun()
+            else:
+                st.info("📂 No uploaded files found")
+                st.write("Files will appear here when users upload Excel files through the AD module APIs.")
+        else:
+            st.warning("📁 Upload directory does not exist")
+            st.write("The upload directory will be created automatically when the first file is uploaded.")
+
     if st.button("Back to API Tester"):
         st.session_state.admin_mode = False
         st.rerun()
@@ -590,32 +792,88 @@ def main():
     title_col, user_col, _ = st.columns([2, 3, 3])
 
     with title_col:
+        selected_module = st.session_state.get('selected_module', 'EX')
+        module_name = "Assessment" if selected_module == "EX" else "Administration"
         st.markdown(
-            f"<h3 style='margin:0;'>API Tester - {st.session_state.username}</h3>",
+            f"<h3 style='margin:0;'>API Tester - {st.session_state.get('username', 'Unknown')}</h3>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<p style='margin:0; color: #666;'>Module: {module_name} ({selected_module})</p>",
             unsafe_allow_html=True
         )
 
     with user_col:
-        # User switcher dropdown
+        # Module selection dropdown
+        module_options = ["EX", "AD"]
+        
+        # Initialize module in session state if not exists
+        if 'selected_module' not in st.session_state:
+            st.session_state.selected_module = "EX"  # Default to EX (assessment)
+        
+        current_module_index = module_options.index(st.session_state.selected_module) if st.session_state.selected_module in module_options else 0
+
+        selected_module = st.selectbox(
+            "Module",
+            module_options,
+            index=current_module_index,
+            key="module_switcher",
+            help="EX: Assessment Module, AD: Administration Module"
+        )
+
+        if selected_module != st.session_state.selected_module:
+            st.session_state.selected_module = selected_module
+            
+            # Update URLs only for APIs that match the newly selected module
+            for api_name in st.session_state.apis:
+                api_config = st.session_state.apis[api_name]
+                api_module = api_config.get('module', 'EX')
+                if api_module == selected_module and "path" in api_config:
+                    path = api_config["path"]
+                    api_config["url"] = f"{get_current_base_url(st.session_state.current_env, selected_module)}{path}"
+
+            st.rerun()
+
+    # Initialize session state for current user
+    if 'api_responses' not in st.session_state:
+        st.session_state.api_responses = {}
+    if 'current_env' not in st.session_state:
+        # Set default environment based on username (BA users default to DEMO, QA users default to SIT)
+        enabled_envs = get_enabled_environments()
+        username = st.session_state.get('username', '')
+        if username.upper().startswith("BA") and "DEMO" in enabled_envs:
+            st.session_state.current_env = "DEMO"
+        else:
+            st.session_state.current_env = "SIT" if "SIT" in enabled_envs else enabled_envs[0] if enabled_envs else "SIT"
+
+    # Admin options and logout in sidebar
+    username = st.session_state.get('username', 'Unknown')
+    st.sidebar.markdown(f"**Active User:** {username}")
+    
+    # User switcher in sidebar
+    if len(st.session_state.logged_in_users) > 1:
+        st.sidebar.subheader("Switch User")
         user_options = list(st.session_state.logged_in_users.keys())
         
-        # Sort the user options to prioritize BA users
+        # Sort the user options to prioritize QA users, then BA users
+        qa_users = [user for user in user_options if user.upper().startswith("QA")]
         ba_users = [user for user in user_options if user.upper().startswith("BA")]
-        regular_users = [user for user in user_options if not user.upper().startswith("BA")]
+        regular_users = [user for user in user_options if not user.upper().startswith("QA") and not user.upper().startswith("BA")]
         
-        # Sort each group alphabetically and combine with BA users first
+        # Sort each group alphabetically and combine with QA users first, then BA users
+        qa_users.sort()
         ba_users.sort()
         regular_users.sort()
-        sorted_user_options = ba_users + regular_users
+        sorted_user_options = qa_users + ba_users + regular_users
         
         # Find the current user's index in the sorted list
         current_index = sorted_user_options.index(st.session_state.active_user) if st.session_state.active_user in sorted_user_options else 0
 
-        selected_user = st.selectbox(
-            "Switch User",
+        selected_user = st.sidebar.selectbox(
+            "Switch to:",
             sorted_user_options,
             index=current_index,
-            key="user_switcher"
+            key="sidebar_user_switcher"
         )
 
         if selected_user != st.session_state.active_user:
@@ -623,27 +881,14 @@ def main():
             _load_user_data(selected_user)
             st.rerun()
 
-    # Initialize session state for current user
-    if 'api_responses' not in st.session_state:
-        st.session_state.api_responses = {}
-    if 'current_env' not in st.session_state:
-        # Set default environment based on username (BA users default to DEMO)
-        enabled_envs = get_enabled_environments()
-        if st.session_state.username.upper().startswith("BA") and "DEMO" in enabled_envs:
-            st.session_state.current_env = "DEMO"
-        else:
-            st.session_state.current_env = "SIT" if "SIT" in enabled_envs else enabled_envs[0] if enabled_envs else "SIT"
-
-    # Admin options and logout in sidebar
-    st.sidebar.markdown(f"**Active User:** {st.session_state.username}")
-
     if st.session_state.get("is_admin", False):
         if st.sidebar.button("Admin Panel"):
             st.session_state.admin_mode = True
             st.rerun()
 
     # Individual user logout
-    if st.sidebar.button(f"🚪 Logout {st.session_state.username}"):
+    username = st.session_state.get('username', 'Unknown')
+    if st.sidebar.button(f"🚪 Logout {username}"):
         _logout_user(st.session_state.username)
         st.rerun()
 
@@ -681,14 +926,17 @@ def main():
             for api_name in st.session_state.apis:
                 if "path" in st.session_state.apis[api_name]:
                     path = st.session_state.apis[api_name]["path"]
-                    st.session_state.apis[api_name]["url"] = f"{get_current_base_url(env)}{path}"
+                    api_module = st.session_state.apis[api_name].get('module', 'EX')  # Use saved module or default to EX
+                    st.session_state.apis[api_name]["url"] = f"{get_current_base_url(env, api_module)}{path}"
 
             st.rerun()
     else:
         st.sidebar.warning("No environments enabled. Contact admin.")
 
-    # Show current base URL
-    st.sidebar.info(f"Base URL: {get_current_base_url(st.session_state.current_env)}")
+    # Show current base URL for selected module
+    selected_module = st.session_state.get('selected_module', 'EX')
+    module_name = "Assessment" if selected_module == "EX" else "Administration"
+    st.sidebar.info(f"Base URL ({module_name}): {get_current_base_url(st.session_state.current_env, selected_module)}")
 
     # Cookies management section in sidebar
     with st.sidebar.expander("Manage Environment Cookies"):
@@ -698,12 +946,13 @@ def main():
     col1, col2 = st.columns([1, 3])
 
     with col1:
-        # Determine if user is a BA account (username starts with BA)
-        is_ba_account = st.session_state.username.upper().startswith("BA")
+        # Determine if user is a QA or BA account (username starts with QA or BA)
+        username = st.session_state.get('username', '')
+        is_priority_account = username.upper().startswith("QA") or username.upper().startswith("BA")
         
         # Combined API Management and Predefined API Tests in a single expander
-        # Auto-close for BA accounts, open for others
-        with st.expander("API Management & Predefined Tests", expanded=not is_ba_account):
+        # Auto-close for QA/BA accounts, open for others
+        with st.expander("API Management & Predefined Tests", expanded=not is_priority_account):
             # API Management section
             st.subheader("API Management")
             add_new_api()
@@ -714,128 +963,158 @@ def main():
 
         # List of saved APIs
         if st.session_state.apis:
-            # Saved APIs in an expander - always expanded regardless of account type
-            with st.expander("Saved APIs", expanded=True):
-                # Create a container with fixed height for scrolling
-                api_list_container = st.container()
+            # Filter APIs by selected module
+            selected_module = st.session_state.get('selected_module', 'EX')
+            filtered_apis = {
+                name: config for name, config in st.session_state.apis.items() 
+                if config.get('module', 'EX') == selected_module
+            }
+            
+            if filtered_apis:
+                # Saved APIs in an expander - always expanded regardless of account type
+                with st.expander(f"Saved APIs ({selected_module})", expanded=True):
+                    # Create a container with fixed height for scrolling
+                    api_list_container = st.container()
 
-                # Set max height with CSS to enable scrolling
-                api_list_container.markdown("""
-                <style>
-                .api-list {
-                    max-height: 300px;
-                    overflow-y: auto;
-                    padding-right: 10px;
-                }
-                </style>
-                """, unsafe_allow_html=True)
+                    # Set max height with CSS to enable scrolling
+                    api_list_container.markdown("""
+                    <style>
+                    .api-list {
+                        max-height: 300px;
+                        overflow-y: auto;
+                        padding-right: 10px;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
 
-                # Create scrollable area
-                with api_list_container:
-                    st.markdown('<div class="api-list">', unsafe_allow_html=True)
+                    # Create scrollable area
+                    with api_list_container:
+                        st.markdown('<div class="api-list">', unsafe_allow_html=True)
 
-                    # Display each API with open, rename and delete buttons
-                    # Use reversed list to show newest APIs first
-                    api_names = list(st.session_state.apis.keys())
-                    # Reverse the order so newest APIs appear first
-                    for api_name in reversed(api_names):
-                        cols = st.columns([3, 1, 1, 1])
+                        # Display each API with open, rename and delete buttons
+                        # Use reversed list to show newest APIs first
+                        api_names = list(filtered_apis.keys())
+                        # Reverse the order so newest APIs appear first
+                        for api_name in reversed(api_names):
+                            cols = st.columns([3, 1, 1, 1])
 
-                        # Display API name
-                        cols[0].write(api_name)
+                            # Display API name
+                            cols[0].write(api_name)
 
-                        # Open button
-                        if cols[1].button("🔍", key=f"open_{api_name}"):
-                            # No need to clear API-specific keys anymore as we use unique keys per API
-                                
-                            st.session_state.current_api = api_name
-                            st.rerun()
+                            # Open button
+                            if cols[1].button("🔍", key=f"open_{api_name}"):
+                                # No need to clear API-specific keys anymore as we use unique keys per API
+                                    
+                                st.session_state.current_api = api_name
+                                st.rerun()
 
-                        # Rename button
-                        if cols[2].button("✏️", key=f"rename_{api_name}"):
-                            # Show rename form
-                            st.session_state[f"rename_mode_{api_name}"] = True
-                            st.rerun()
+                            # Rename button
+                            if cols[2].button("✏️", key=f"rename_{api_name}"):
+                                # Show rename form
+                                st.session_state[f"rename_mode_{api_name}"] = True
+                                st.rerun()
 
-                        # Delete button
-                        if cols[3].button("🗑️", key=f"del_{api_name}"):
-                            # Delete the API
-                            del st.session_state.apis[api_name]
+                            # Delete button
+                            if cols[3].button("🗑️", key=f"del_{api_name}"):
+                                # Delete the API
+                                del st.session_state.apis[api_name]
 
-                            # Also delete any associated response
-                            if api_name in st.session_state.api_responses:
-                                del st.session_state.api_responses[api_name]
+                                # Also delete any associated response
+                                if api_name in st.session_state.api_responses:
+                                    del st.session_state.api_responses[api_name]
 
-                            # Update current_api if needed
-                            if 'current_api' in st.session_state and st.session_state.current_api == api_name:
-                                if st.session_state.apis:
-                                    st.session_state.current_api = next(iter(st.session_state.apis))
-                                else:
-                                    del st.session_state.current_api
+                                # Update current_api if needed
+                                if 'current_api' in st.session_state and st.session_state.current_api == api_name:
+                                    # Find another API of the same module to switch to
+                                    remaining_apis = {
+                                        name: config for name, config in st.session_state.apis.items() 
+                                        if config.get('module', 'EX') == selected_module
+                                    }
+                                    if remaining_apis:
+                                        st.session_state.current_api = next(iter(remaining_apis))
+                                    else:
+                                        if 'current_api' in st.session_state:
+                                            del st.session_state.current_api
 
-                            # Save the updated APIs to file
-                            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+                                # Save the updated APIs to file
+                                save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
 
-                            st.success(f"Deleted API: {api_name}")
-                            st.rerun()
+                                st.success(f"Deleted API: {api_name}")
+                                st.rerun()
 
-                        # Show rename form if in rename mode
-                        if st.session_state.get(f"rename_mode_{api_name}", False):
-                            with st.form(key=f"rename_form_{api_name}"):
-                                new_name = st.text_input("New name", value=api_name)
+                            # Show rename form if in rename mode
+                            if st.session_state.get(f"rename_mode_{api_name}", False):
+                                with st.form(key=f"rename_form_{api_name}"):
+                                    new_name = st.text_input("New name", value=api_name)
 
-                                rename_cols = st.columns(2)
-                                rename_submit = rename_cols[0].form_submit_button("Save")
-                                rename_cancel = rename_cols[1].form_submit_button("Cancel")
+                                    rename_cols = st.columns(2)
+                                    rename_submit = rename_cols[0].form_submit_button("Save")
+                                    rename_cancel = rename_cols[1].form_submit_button("Cancel")
 
-                                if rename_submit and new_name:
-                                    if new_name != api_name:
-                                        if new_name in st.session_state.apis:
-                                            st.error(f"Name '{new_name}' already exists")
-                                        else:
-                                            # Create a copy of the API with the new name
-                                            st.session_state.apis[new_name] = st.session_state.apis[api_name].copy()
+                                    if rename_submit and new_name:
+                                        if new_name != api_name:
+                                            if new_name in st.session_state.apis:
+                                                st.error(f"Name '{new_name}' already exists")
+                                            else:
+                                                # Create a copy of the API with the new name
+                                                st.session_state.apis[new_name] = st.session_state.apis[api_name].copy()
 
-                                            # Copy response data if exists
-                                            if api_name in st.session_state.api_responses:
-                                                st.session_state.api_responses[new_name] = st.session_state.api_responses[api_name]
+                                                # Copy response data if exists
+                                                if api_name in st.session_state.api_responses:
+                                                    st.session_state.api_responses[new_name] = st.session_state.api_responses[api_name]
 
-                                            # Delete old API
-                                            del st.session_state.apis[api_name]
+                                                # Delete old API
+                                                del st.session_state.apis[api_name]
 
-                                            # Update current_api if needed
-                                            if 'current_api' in st.session_state and st.session_state.current_api == api_name:
-                                                st.session_state.current_api = new_name
+                                                # Update current_api if needed
+                                                if 'current_api' in st.session_state and st.session_state.current_api == api_name:
+                                                    st.session_state.current_api = new_name
 
-                                            # Save updated APIs to file
-                                            save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
+                                                # Save updated APIs to file
+                                                save_user_apis(st.session_state.apis, st.session_state.file_paths["USER_APIS_FILE"])
 
-                                            st.success(f"Renamed '{api_name}' to '{new_name}'")
+                                                st.success(f"Renamed '{api_name}' to '{new_name}'")
 
-                                            # Reset rename mode
-                                            del st.session_state[f"rename_mode_{api_name}"]
-                                            st.rerun()
+                                                # Reset rename mode
+                                                del st.session_state[f"rename_mode_{api_name}"]
+                                                st.rerun()
 
-                                if rename_cancel:
-                                    # Reset rename mode
-                                    del st.session_state[f"rename_mode_{api_name}"]
-                                    st.rerun()
+                                    if rename_cancel:
+                                        # Reset rename mode
+                                        del st.session_state[f"rename_mode_{api_name}"]
+                                        st.rerun()
 
-                        # Add a separator line
-                        st.markdown("---")
+                            # Add a separator line
+                            st.markdown("---")
 
-                    st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.info(f"No APIs saved for {selected_module} module yet. Add one above or load from predefined tests.")
         else:
             st.info("No APIs added yet. Add one above or load from predefined tests.")
 
     with col2:
         if 'current_api' in st.session_state:
             if st.session_state.current_api in st.session_state.apis:
-                display_api_tester(st.session_state.current_api, file_paths)
+                # Check if the current API matches the selected module
+                current_api_config = st.session_state.apis[st.session_state.current_api]
+                current_api_module = current_api_config.get('module', 'EX')
+                selected_module = st.session_state.get('selected_module', 'EX')
+                
+                if current_api_module == selected_module:
+                    display_api_tester(st.session_state.current_api, file_paths)
+                else:
+                    # API doesn't match current module, offer to switch
+                    st.info(f"Current API is from {current_api_module} module. Switch to {current_api_module} module to view it.")
+                    if st.button(f"Switch to {current_api_module} Module"):
+                        st.session_state.selected_module = current_api_module
+                        st.rerun()
             else:
                 st.info("Select an API to test or add a new one.")
         else:
-            st.info("Select an API to test or add a new one.")
+            selected_module = st.session_state.get('selected_module', 'EX')
+            module_name = "Assessment" if selected_module == "EX" else "Administration"
+            st.info(f"Select an API from the {module_name} ({selected_module}) module to test or add a new one.")
 
 
 def manage_cookies(file_path):
@@ -1002,19 +1281,28 @@ def add_new_api():
         )
 
         method = st.selectbox("HTTP Method", ["GET", "POST", "PUT", "DELETE", "PATCH"])
+        
+        # Module selection dropdown
+        module = st.selectbox(
+            "Module",
+            ["EX", "AD"],
+            index=0,  # Default to EX
+            help="EX: Assessment Module, AD: Administration Module"
+        )
 
         submitted = st.form_submit_button("Add API")
         if submitted and api_name and api_path:
             # Ensure path starts with a slash
             api_path = ensure_path_format(api_path)
 
-            # Combine base URL with path
-            api_url = f"{get_current_base_url(st.session_state.current_env)}{api_path}"
+            # Combine base URL with path using selected module
+            api_url = f"{get_current_base_url(st.session_state.current_env, module)}{api_path}"
 
             st.session_state.apis[api_name] = {
                 "url": api_url,
                 "path": api_path,  # Store the path separately
                 "method": method,
+                "module": module,  # Store the selected module
                 "headers": {},
                 "params": {},
                 "body": {}
@@ -1026,6 +1314,7 @@ def add_new_api():
             _save_current_user_data()
 
             st.success(f"API '{api_name}' added successfully!")
+            st.rerun()
 
 
 def load_predefined_api(file_path):
@@ -1038,26 +1327,51 @@ def load_predefined_api(file_path):
         return
 
     # Create a dropdown for predefined APIs
-    selected_api = st.selectbox(
-        "Select Predefined API Test",
-        list(predefined_configs.keys())
-    )
+    if predefined_configs:
+        # Create a display list that shows module information
+        api_display_options = []
+        api_name_mapping = {}
+        
+        for api_name, config in predefined_configs.items():
+            module = config.get('module', 'EX')
+            module_name = "Assessment" if module == "EX" else "Administration"
+            display_name = f"{api_name} ({module_name})"
+            api_display_options.append(display_name)
+            api_name_mapping[display_name] = api_name
+        
+        selected_display = st.selectbox(
+            "Select Predefined API Test",
+            api_display_options
+        )
+        
+        selected_api = api_name_mapping[selected_display]
+    else:
+        selected_api = None
 
-    if st.button("Load Predefined Test"):
+    if selected_api and st.button("Load Predefined Test"):
         # Convert the configuration to a complete API configuration
         api_config = predefined_configs[selected_api].copy()
 
         # Get the path from the config
         path = api_config.get("path", "")
+        if not path:
+            # If no path field, try url_path for backward compatibility
+            path = api_config.get("url_path", "")
 
         # Ensure path starts with a slash
         path = ensure_path_format(path) if path else ""
 
-        # Add the full URL based on current environment
-        api_config["url"] = f"{get_current_base_url(st.session_state.current_env)}{path}"
+        # Get module from config or default to EX
+        config_module = api_config.get("module", "EX")
+        
+        # Add the full URL based on current environment and config module
+        api_config["url"] = f"{get_current_base_url(st.session_state.current_env, config_module)}{path}"
 
         # Make sure path is stored
         api_config["path"] = path
+        
+        # Store the module from config
+        api_config["module"] = config_module
 
         # Create a temporary name with special marker
         temp_api_name = f"temp_{selected_api}"
@@ -1069,8 +1383,15 @@ def load_predefined_api(file_path):
 
         # Set as current API for viewing
         st.session_state.current_api = temp_api_name
+        
+        # Automatically switch to the correct module if different from current selection
+        current_selected_module = st.session_state.get('selected_module', 'EX')
+        if config_module != current_selected_module:
+            st.session_state.selected_module = config_module
+            st.info(f"Switched to {config_module} module to display the loaded API.")
 
-        st.success(f"Loaded '{selected_api}' API test (preview)")
+        module_name = "Assessment" if config_module == "EX" else "Administration"
+        st.success(f"Loaded '{selected_api}' API test (preview) - Module: {module_name} ({config_module})")
         st.info("This API is in preview mode. Save it to add permanently to your saved APIs.")
         st.rerun()
 
@@ -1166,14 +1487,406 @@ def _render_parameters_section(api):
             st.rerun()
 
 
+def _generate_excel_template():
+    """Generate Excel template with sample data for student upload"""
+    try:
+        import io
+        
+        # Create sample data with proper format
+        template_data = {
+            'StudentID': [
+                'STU001',
+                'STU002', 
+                'STU003',
+                'STU004',
+                'STU005'
+            ],
+            'FutureStage': [
+                1,
+                2,
+                1,
+                3,
+                2
+            ],
+            'FutureCourseVersionCode': [
+                'CS101V1',
+                'MATH201V2',
+                'ENG101V1',
+                'PHY301V3',
+                'CHEM201V2'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write the template data
+            df.to_excel(writer, sheet_name='StudentData', index=False)
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['StudentData']
+            
+            # Add some formatting
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            # Header formatting
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            
+            # Format header row
+            for col_num, column_title in enumerate(df.columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add instructions sheet
+            instructions_data = {
+                'Column Name': ['StudentID', 'FutureStage', 'FutureCourseVersionCode'],
+                'Description': [
+                    'Unique identifier for the student (e.g., STU001, STU002)',
+                    'Future stage number (integer: 1, 2, 3, etc.)',
+                    'Course version code (e.g., CS101V1, MATH201V2)'
+                ],
+                'Data Type': ['Text', 'Number', 'Text'],
+                'Required': ['Yes', 'Yes', 'Yes'],
+                'Example': ['STU001', '1', 'CS101V1']
+            }
+            
+            instructions_df = pd.DataFrame(instructions_data)
+            instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+            
+            # Format instructions sheet
+            instructions_worksheet = writer.sheets['Instructions']
+            for col_num, column_title in enumerate(instructions_df.columns, 1):
+                cell = instructions_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for instructions
+            for column in instructions_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                instructions_worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        st.error(f"Error generating template: {str(e)}")
+        return None
+
+
+def _render_excel_upload_section(api_name, api, file_paths):
+    """Render Excel upload section for AD module APIs (DEVEXUpdateStudentUser)"""
+    
+    st.subheader("📊 Excel Upload for Student Data")
+    st.info("Upload an Excel file with columns: StudentID, FutureStage, FutureCourseVersionCode")
+    
+    # Template download section
+    with st.expander("📥 Download Excel Template", expanded=True):
+        st.write("**Get started with the correct format:**")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            - **StudentID**: Unique student identifier (e.g., STU001, STU002)
+            - **FutureStage**: Stage number as integer (1, 2, 3, etc.)
+            - **FutureCourseVersionCode**: Course version code (e.g., CS101V1, MATH201V2)
+            """)
+        
+        with col2:
+            template_data = _generate_excel_template()
+            if template_data:
+                st.download_button(
+                    label="Download Template",
+                    data=template_data,
+                    file_name="student_data_template.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"download_template_file_{api_name}",
+                    help="Download Excel template with sample data and instructions",
+                    use_container_width=True
+                )
+    
+    st.markdown("---")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose Excel file",
+        type=['xlsx', 'xls'],
+        key=f"excel_upload_{api_name}",
+        help="Upload Excel file with StudentID, FutureStage, FutureCourseVersionCode columns"
+    )
+    
+    if uploaded_file is None:
+        st.info("💡 **Tip**: Download the template above to get started with the correct format!")
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        try:
+            # Create upload_data directory if it doesn't exist
+            upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+            
+            # Generate unique filename with timestamp - clean up names to avoid path issues
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            username = st.session_state.get('username', 'unknown')
+            
+            # Clean username - remove any characters that might cause path issues
+            clean_username = ''.join(c for c in username if c.isalnum() or c in '-_').strip()
+            if not clean_username:
+                clean_username = 'unknown'
+            
+            # Clean API name - remove any characters that might cause path issues
+            clean_api_name = ''.join(c for c in api_name if c.isalnum() or c in '-_').strip()
+            if not clean_api_name:
+                clean_api_name = 'api'
+            
+            file_extension = os.path.splitext(uploaded_file.name)[1]
+            if not file_extension:
+                file_extension = '.xlsx'  # Default extension
+            
+            saved_filename = f"{clean_username}_{clean_api_name}_{timestamp}{file_extension}"
+            saved_file_path = os.path.join(upload_dir, saved_filename)
+            
+            # Save the uploaded file
+            with open(saved_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # st.success(f"📁 File saved as: {saved_filename}")
+            
+            # Read Excel file directly from uploaded file buffer, not from saved file
+            df = pd.read_excel(uploaded_file)
+            
+            # Validate required columns
+            required_columns = ['StudentID', 'FutureStage', 'FutureCourseVersionCode']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.info(f"Required columns: {', '.join(required_columns)}")
+            else:
+                # Show preview of data
+                st.success(f"✅ File uploaded successfully! Found {len(df)} student records.")
+                
+                with st.expander("📋 Data Preview", expanded=True):
+                    st.dataframe(df.head(10))
+                    if len(df) > 10:
+                        st.info(f"Showing first 10 rows of {len(df)} total rows")
+                
+                # Automatically process data and fill JSON (no button needed)
+                # Convert DataFrame to the required JSON format
+                students_list = []
+                
+                for _, row in df.iterrows():
+                    student_entry = {
+                        "studentId": str(row['StudentID']),
+                        "futureStage": int(row['FutureStage']),
+                        "futureCourseVersionCode": str(row['FutureCourseVersionCode'])
+                    }
+                    students_list.append(student_entry)
+                
+                # Create the final JSON structure
+                json_body = {
+                    "students": students_list
+                }
+                
+                # Update API body
+                api['body'] = json_body
+                
+                # Update session state
+                formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                body_json_key = f"original_body_json_{api_name}"
+                st.session_state[body_json_key] = formatted_json
+                st.session_state[f"json_body_{api_name}"] = formatted_json
+                
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                st.success(f"✅ Automatically processed {len(students_list)} student records and filled JSON body!")
+                
+                # OLD MANUAL BUTTON (commented out - no longer needed)
+                # if st.button("🔄 Process Data & Fill JSON", key=f"process_excel_{api_name}"):
+                #     # Convert DataFrame to the required JSON format
+                #     students_list = []
+                #     
+                #     for _, row in df.iterrows():
+                #         student_entry = {
+                #             "studentId": str(row['StudentID']),
+                #             "futureStage": int(row['FutureStage']),
+                #             "futureCourseVersionCode": str(row['FutureCourseVersionCode'])
+                #         }
+                #         students_list.append(student_entry)
+                #     
+                #     # Create the final JSON structure
+                #     json_body = {
+                #         "students": students_list
+                #     }
+                #     
+                #     # Update API body
+                #     api['body'] = json_body
+                #     
+                #     # Update session state
+                #     formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                #     body_json_key = f"original_body_json_{api_name}"
+                #     st.session_state[body_json_key] = formatted_json
+                #     st.session_state[f"json_body_{api_name}"] = formatted_json
+                #     
+                #     # Auto-save
+                #     st.session_state.apis[api_name] = api.copy()
+                #     save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"])
+                #     _save_current_user_data()
+                #     
+                #     st.success(f"✅ Processed {len(students_list)} student records and filled JSON body!")
+                #     st.rerun()
+                    
+        except Exception as e:
+            st.error(f"Error processing Excel file: {str(e)}")
+            st.info("Please ensure the file format is correct and contains the required columns.")
+            
+            # Show helpful info for common issues
+            if "No such file or directory" in str(e):
+                st.warning("💡 **File access issue**: Please try uploading the file again.")
+            elif "BadZipFile" in str(e) or "XLRDError" in str(e):
+                st.warning("� **File format issue**: Please ensure you're uploading a valid Excel file (.xlsx or .xls).")
+    
+
+    
+    # JSON Body section (always show, with or without Excel upload)
+    # Determine if JSON Body should be expanded by default
+    username = st.session_state.get('username', '')
+    is_qa_account = username.upper().startswith("QA")
+    # For QA accounts in AD module, default to closed; otherwise expanded
+    json_body_expanded = not is_qa_account  # QA accounts get False (closed), others get True (expanded)
+
+    with st.expander("📝 JSON Body", expanded=json_body_expanded):
+        # Show as JSON editor with better formatting
+        if 'body' not in api:
+            api['body'] = {"students": []}
+            
+        # Keep track of original JSON to detect changes
+        original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+        body_json_key = f"original_body_json_{api_name}"
+        
+        if body_json_key not in st.session_state:
+            st.session_state[body_json_key] = original_json
+        
+        # Add helpful buttons for common JSON operations
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("Format JSON", key=f"format_json_{api_name}"):
+                try:
+                    # Parse and reformat the current JSON
+                    current_json = st.session_state.get(f"json_body_{api_name}", original_json)
+                    parsed = json.loads(current_json)
+                    formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                    
+                    # Update the API body and session state
+                    api['body'] = parsed
+                    st.session_state[f"json_body_{api_name}"] = formatted_json
+                    st.session_state[body_json_key] = formatted_json
+                    
+                    # Only update current user data in memory (no file save)
+                    _save_current_user_data()
+                    
+                    st.success("✅ JSON formatted!")
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("❌ Cannot format invalid JSON")
+        
+        with col2:
+            st.info("💡 Tip: Upload Excel file above or manually edit JSON. Changes tracked in memory.")
+
+        body_json = st.text_area(
+            "JSON Body (Auto-filled from Excel or manual entry)", 
+            value=original_json,
+            height=400,
+            key=f"json_body_{api_name}",
+            help="JSON body is auto-filled when Excel file is processed, or you can edit manually. Changes are tracked in memory and will be saved when you click 'Save API'."
+        )
+
+        try:
+            # Parse the JSON
+            parsed_body = json.loads(body_json)
+            api['body'] = parsed_body
+            
+            # Show JSON validation status
+            # st.success("✅ Valid JSON")
+            
+            # Show student count if applicable
+            if isinstance(parsed_body, dict) and 'students' in parsed_body:
+                student_count = len(parsed_body['students'])
+                # st.info(f"📊 Contains {student_count} student record(s)")
+            
+            # Auto-save if JSON has changed and is valid
+            if body_json != st.session_state[body_json_key]:
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                # Update original JSON after saving
+                st.session_state[body_json_key] = body_json
+                
+                # Show a subtle feedback that changes are tracked
+                # st.info("💾 Changes tracked in memory")
+            
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON format: {str(e)}")
+            st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+            
+        # Show a preview of the parsed JSON structure if valid
+        try:
+            parsed_preview = json.loads(body_json)
+            if parsed_preview:
+                with st.expander("📋 JSON Structure Preview", expanded=False):
+                    st.json(parsed_preview)
+        except json.JSONDecodeError:
+            # Preview not available for invalid JSON
+            pass
+
+
 def _render_body_section(api_name, api, file_paths):
     """Render the request body section for POST/PUT/PATCH requests"""
-    # Check if user is BA account and in DEMO environment
-    is_ba_account = st.session_state.username.upper().startswith("BA")
+    # Check if user is QA or BA account and in DEMO environment
+    username = st.session_state.get('username', '')
+    is_priority_account = username.upper().startswith("QA") or username.upper().startswith("BA")
     is_demo_env = st.session_state.current_env == "DEMO"
     
-    if is_ba_account and is_demo_env:
-        # Simplified UI for BA users in DEMO environment
+    # Check if this is an AD module API (Administration)
+    api_module = api.get('module', 'EX')
+    is_ad_module = api_module == "AD"
+    
+    # Special handling for AD module APIs with Excel upload
+    if is_ad_module and api_name and "DEVEXUpdateStudentUser" in api_name:
+        _render_excel_upload_section(api_name, api, file_paths)
+    elif is_priority_account and is_demo_env:
+        # Simplified UI for QA/BA users in DEMO environment
         with st.expander("Request Body", expanded=True):
             # Initialize body if not exist
             if 'body' not in api:
@@ -1220,41 +1933,66 @@ def _render_body_section(api_name, api, file_paths):
             
             if (new_courseId != st.session_state[courseId_key] or 
                 new_semesterId != st.session_state[semesterId_key]):
-                # Save to user's file and update user data
-                st.session_state.apis[api_name] = api.copy()
-                save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"])
+                # Only update current user data in memory (no file save)
                 _save_current_user_data()  # Update the logged_in_users dict
                 
                 # Update original values after saving
                 st.session_state[courseId_key] = new_courseId
                 st.session_state[semesterId_key] = new_semesterId
                 
-                # Show a subtle feedback that saving occurred
-                st.success("Auto-saved changes")
-                time.sleep(0.5)  # Brief delay to show the message
+                # Show a subtle feedback that changes are tracked
+                # st.success("Changes tracked in memory")
                 st.rerun()  # Refresh UI after auto-save
             
             # Display the JSON for reference (read-only)
             st.code(json.dumps(api['body'], indent=2), language="json")
     else:
-        # Regular JSON editor for non-BA users or non-DEMO environment
+        # Enhanced JSON editor for all other users
         with st.expander("Request Body", expanded=True):
-            # Show as JSON editor
+            # Show as JSON editor with better formatting
             if 'body' not in api:
                 api['body'] = {}
                 
             # Keep track of original JSON to detect changes
-            original_json = json.dumps(api['body'], indent=2)
+            original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
             body_json_key = f"original_body_json_{api_name}"
             
             if body_json_key not in st.session_state:
                 st.session_state[body_json_key] = original_json
             
+            # Add helpful buttons for common JSON operations
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                if st.button("Format JSON", key=f"format_json_{api_name}"):
+                    try:
+                        # Parse and reformat the current JSON
+                        current_json = st.session_state.get(f"json_body_{api_name}", original_json)
+                        parsed = json.loads(current_json)
+                        formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                        
+                        # Update the API body and session state
+                        api['body'] = parsed
+                        st.session_state[f"json_body_{api_name}"] = formatted_json
+                        st.session_state[body_json_key] = formatted_json
+                        
+                        # Auto-save the formatted JSON
+                        # Only update current user data in memory (no file save)
+                        _save_current_user_data()  # Update the logged_in_users dict
+                        
+                        st.success("✅ JSON formatted!")
+                        st.rerun()
+                    except json.JSONDecodeError:
+                        st.error("❌ Cannot format invalid JSON")
+            
+            with col2:
+                st.info("💡 Tip: Changes are tracked in memory. Use 'Format JSON' to beautify your code.")
+
             body_json = st.text_area(
-                "JSON Body", 
+                "JSON Body (Pretty formatted)", 
                 value=original_json,
-                height=300,
-                key=f"json_body_{api_name}"
+                height=400,
+                key=f"json_body_{api_name}",
+                help="Enter valid JSON. Changes are tracked in memory and will be saved when you click 'Save API'. Use 'Format JSON' button to beautify your code."
             )
 
             try:
@@ -1263,24 +2001,29 @@ def _render_body_section(api_name, api, file_paths):
                 api['body'] = parsed_body
                 
                 # Auto-save if JSON has changed and is valid
-                body_json_key = f"original_body_json_{api_name}"
-                
                 if body_json != st.session_state[body_json_key]:
-                    # Save to user's file and update user data
-                    st.session_state.apis[api_name] = api.copy()
-                    save_user_apis(st.session_state.apis, file_paths["USER_APIS_FILE"])
+                    # Only update current user data in memory (no file save)
                     _save_current_user_data()  # Update the logged_in_users dict
                     
                     # Update original JSON after saving
                     st.session_state[body_json_key] = body_json
                     
-                    # Show a subtle feedback that saving occurred
-                    st.success("Auto-saved changes")
-                    time.sleep(0.5)  # Brief delay to show the message
-                    st.rerun()  # Refresh UI after auto-save
+                    # Show a subtle feedback that changes are tracked
+                    # st.info("💾 Changes tracked in memory")
                 
+            except json.JSONDecodeError as e:
+                st.error(f"❌ Invalid JSON format: {str(e)}")
+                st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+                
+            # Show a preview of the parsed JSON structure if valid
+            try:
+                parsed_preview = json.loads(body_json)
+                if parsed_preview:
+                    with st.expander("📋 JSON Structure Preview", expanded=False):
+                        st.json(parsed_preview)
             except json.JSONDecodeError:
-                st.error("Invalid JSON format - changes will not be auto-saved")
+                # Preview not available for invalid JSON
+                pass
 
 
 def _render_cookies_section(api):
@@ -1615,16 +2358,19 @@ def display_api_tester(api_name, file_paths):
     st.subheader(f"Testing: {api_name}")
 
     # Display base URL and path separately
-    base_url = get_current_base_url(st.session_state.current_env)
+    api_module = api.get('module', 'EX')  # Default to EX if module not saved
+    base_url = get_current_base_url(st.session_state.current_env, api_module)
     path = api.get("path", "")
     url_path = api.get("url_path", "")
 
     st.write(f"Base URL: {base_url}")
     st.write(f"URL Path: {url_path}")  # Use the actual path that's stored in the API config
     st.write(f"Method: {api['method']}")
+    st.write(f"Module: {api_module} ({'Assessment' if api_module == 'EX' else 'Administration'})")
 
-    is_ba_account = st.session_state.username.upper().startswith("BA")
-    with st.expander("Edit URL Path", expanded=not is_ba_account):
+    username = st.session_state.get('username', '')
+    is_priority_account = username.upper().startswith("QA") or username.upper().startswith("BA")
+    with st.expander("Edit URL Path", expanded=not is_priority_account):
         # Option to edit the path
         new_path = st.text_input(
             "Edit Path", 
@@ -1658,12 +2404,13 @@ def display_api_tester(api_name, file_paths):
         _render_parameters_section(api)
 
     # Check if user is BA account and in DEMO environment
-    is_ba_account = st.session_state.username.upper().startswith("BA")
+    username = st.session_state.get('username', '')
+    is_ba_account = username.upper().startswith("BA")
     is_demo_env = st.session_state.current_env == "DEMO"
     
     # Request Body (for POST, PUT, etc.)
     if api['method'] in ["POST", "PUT", "PATCH"]:
-        _render_body_section(api_name, api, file_paths)
+        _render_body_section(url_path, api, file_paths)
     
     # Add some spacing before buttons for all users
     st.write("")  # Add some space
@@ -1679,7 +2426,8 @@ def show_history():
     """Display API call history in sidebar for current user"""
     if ('api_history' in st.session_state and st.session_state.api_history and 
         st.session_state.get('show_main_app', False)):
-        st.sidebar.subheader(f"API History ({st.session_state.username})")
+        username = st.session_state.get('username', 'Unknown')
+        st.sidebar.subheader(f"API History ({username})")
 
         # Create a dataframe for display
         history_df = pd.DataFrame([
@@ -1712,9 +2460,10 @@ def show_history():
                 # Get config from history
                 config = entry['config'].copy()
 
-                # Update URL based on current environment
+                # Update URL based on current environment and module
                 if "path" in config:
-                    config["url"] = f"{get_current_base_url(st.session_state.current_env)}{config['path']}"
+                    api_module = config.get('module', 'EX')  # Use saved module or default to EX
+                    config["url"] = f"{get_current_base_url(st.session_state.current_env, api_module)}{config['path']}"
 
                 st.session_state.apis[api_name] = config
                 st.session_state.current_api = api_name
