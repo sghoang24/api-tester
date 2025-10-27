@@ -1,7 +1,24 @@
 {
+  "Subject Offering": {
+    "url_path": "/StudentUserWrite/DEVEXUpdateStudentUser",
+    "method": "POST",
+    "module": "AD",
+    "headers": { "Content-Type": "application/json" },
+    "params": {},
+    "body": {
+      "students": [
+        {
+          "studentId": "e9cd949a-1272-4e00-9160-431e69696c5e",
+          "futureStage": 3,
+          "futureCourseVersionCode": "AT8-32"
+        }
+      ]
+    }
+  },
   "Subject Components": {
     "url_path": "/subjectcomponent/list",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -13,6 +30,7 @@
   "Student Group Info": {
     "url_path": "/studentsubjectmark/studentgroupinfo",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -27,6 +45,7 @@
   "Fake Student Flow": {
     "url_path": "/assessmentstudentinfo/devcreate",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -42,6 +61,7 @@
   "Generate Mark": {
     "url_path": "/assessmentmarkentry/devcreatedata",
     "method": "GET",
+    "module": "EX",
     "headers": {},
     "params": {
       "semesterId": "01971a27-e9f3-77a0-bf54-484f9a4bd1d8",
@@ -53,6 +73,7 @@
   "Sync Weightage": {
     "url_path": "/subjectcomponent/syncweightage",
     "method": "GET",
+    "module": "EX",
     "headers": {},
     "params": {},
     "body": {}
@@ -60,6 +81,7 @@
   "Clean Student Distinction": {
     "url_path": "/subjectawarddistinction/devcleandatastudentdistinction",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -73,6 +95,7 @@
   "Incomplete ME Reminding": {
     "url_path": "/studentcomponentmark/devincompletereminding",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -84,6 +107,7 @@
   "Course Award DWM": {
     "url_path": "/courseawarddiplomamerit/devcreate",
     "method": "GET",
+    "module": "EX",
     "headers": {},
     "params": {
       "semesterId": "01971a27-e9f3-77a0-bf54-484f9a4bd1d8"
@@ -93,6 +117,7 @@
   "Random Academic Standing": {
     "url_path": "/processingresult/devrandomacadstanding",
     "method": "POST",
+    "module": "EX",
     "headers": { "Content-Type": "application/json" },
     "params": {},
     "body": {
@@ -106,9 +131,7 @@
           "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
         }
       ],
-      "studentIds": [
-        "0197e904-3ed3-746c-9966-297d50a0b7fd"
-      ],
+      "studentIds": ["0197e904-3ed3-746c-9966-297d50a0b7fd"],
       "numberOfRandom": 10,
       "topX": 20
     }
@@ -116,8 +139,29 @@
   "Sync Percentage": {
     "url_path": "/subjectawarddistinction/syncpercentage",
     "method": "GET",
+    "module": "EX",
     "headers": {},
     "params": {},
     "body": {}
+  },
+  "User Management": {
+    "url_path": "/users/list",
+    "method": "GET",
+    "module": "AD",
+    "headers": {},
+    "params": {},
+    "body": {}
+  },
+  "Create User": {
+    "url_path": "/users/create",
+    "method": "POST",
+    "module": "AD",
+    "headers": { "Content-Type": "application/json" },
+    "params": {},
+    "body": {
+      "username": "newuser",
+      "email": "user@example.com",
+      "role": "student"
+    }
   }
 }

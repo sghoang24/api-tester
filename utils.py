@@ -21,19 +21,47 @@ def get_base_url(env: str) -> str:
         raise ValueError(f"Invalid environment '{env}'. Please use 'DAI', 'SIT', or 'UAT'.")
 
 
-def get_current_base_url(current_env: str) -> str:
-    """Get the base URL for the current environment"""
+def get_current_base_url(current_env: str, module: str = "EX") -> str:
+    """Get the base URL for the current environment and module"""
     environments = load_environments_config()
     if current_env in environments and environments[current_env].get('enabled', True):
-        return environments[current_env]['base_url']
+        base_url = environments[current_env]['base_url']
+        
+        # Remove existing module suffixes if they exist
+        if base_url.endswith("/api/assessment/api/v1"):
+            base_url = base_url.replace("/api/assessment/api/v1", "")
+        elif base_url.endswith("/api/administration/api/v1"):
+            base_url = base_url.replace("/api/administration/api/v1", "")
+        
+        # Add module-specific suffix
+        if module == "EX":
+            base_url += "/api/assessment/api/v1"
+        elif module == "AD":
+            base_url += "/api/administration/api/v1"
+        
+        return base_url
 
-    # Fallback to constants for backward compatibility
+    # Fallback to constants for backward compatibility with module support
     if current_env == "DAI":
-        return DAI_BASE_URL
+        base_url = DAI_BASE_URL
     elif current_env == "SIT":
-        return SIT_BASE_URL
+        base_url = SIT_BASE_URL
     else:  # UAT
-        return UAT_BASE_URL
+        base_url = UAT_BASE_URL
+    
+    # Remove existing module suffixes and add new one
+    if base_url.endswith("/api/assessment/api/v1"):
+        base_url = base_url.replace("/api/assessment/api/v1", "")
+    elif base_url.endswith("/api/administration/api/v1"):
+        base_url = base_url.replace("/api/administration/api/v1", "")
+    
+    # Add module-specific suffix
+    if module == "EX":
+        base_url += "/api/assessment/api/v1"
+    elif module == "AD":
+        base_url += "/api/administration/api/v1"
+    
+    return base_url
 
 
 def load_environments_config() -> Dict[str, Any]:
@@ -338,23 +366,27 @@ def get_existing_users() -> List[str]:
         os.makedirs(user_dir)
 
     existing_users = []
+    qa_users = []
     ba_users = []
     regular_users = []
     
-    # Separate BA users from regular users
+    # Separate QA, BA users from regular users
     for item in os.listdir(user_dir):
         if os.path.isdir(os.path.join(user_dir, item)) and item != "adminadmin":
-            if item.upper().startswith("BA"):
+            if item.upper().startswith("QA"):
+                qa_users.append(item)
+            elif item.upper().startswith("BA"):
                 ba_users.append(item)
             else:
                 regular_users.append(item)
     
     # Sort each group alphabetically
+    qa_users.sort()
     ba_users.sort()
     regular_users.sort()
     
-    # Combine with BA users first
-    existing_users = ba_users + regular_users
+    # Combine with QA users first, then BA users, then regular users
+    existing_users = qa_users + ba_users + regular_users
 
     return existing_users
 
