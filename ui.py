@@ -792,7 +792,14 @@ def main():
     title_col, user_col, _ = st.columns([2, 3, 3])
 
     with title_col:
-        selected_module = st.session_state.get('selected_module', 'EX')
+        # Determine default module based on username if not set
+        username = st.session_state.get('username', '')
+        if username.upper().startswith("QA"):
+            default_module = "AD"
+        else:
+            default_module = "EX"
+        
+        selected_module = st.session_state.get('selected_module', default_module)
         module_name = "Assessment" if selected_module == "EX" else "Administration"
         st.markdown(
             f"<h3 style='margin:0;'>API Tester - {st.session_state.get('username', 'Unknown')}</h3>",
@@ -809,7 +816,12 @@ def main():
         
         # Initialize module in session state if not exists
         if 'selected_module' not in st.session_state:
-            st.session_state.selected_module = "EX"  # Default to EX (assessment)
+            # Determine default module based on username
+            username = st.session_state.get('username', '')
+            if username.upper().startswith("QA"):
+                st.session_state.selected_module = "AD"  # QA accounts default to AD (Administration)
+            else:
+                st.session_state.selected_module = "EX"  # Other accounts default to EX (Assessment)
         
         current_module_index = module_options.index(st.session_state.selected_module) if st.session_state.selected_module in module_options else 0
 
@@ -934,7 +946,14 @@ def main():
         st.sidebar.warning("No environments enabled. Contact admin.")
 
     # Show current base URL for selected module
-    selected_module = st.session_state.get('selected_module', 'EX')
+    # Determine default module based on username if not set
+    username = st.session_state.get('username', '')
+    if username.upper().startswith("QA"):
+        default_module = "AD"
+    else:
+        default_module = "EX"
+    
+    selected_module = st.session_state.get('selected_module', default_module)
     module_name = "Assessment" if selected_module == "EX" else "Administration"
     st.sidebar.info(f"Base URL ({module_name}): {get_current_base_url(st.session_state.current_env, selected_module)}")
 
@@ -964,7 +983,14 @@ def main():
         # List of saved APIs
         if st.session_state.apis:
             # Filter APIs by selected module
-            selected_module = st.session_state.get('selected_module', 'EX')
+            # Determine default module based on username if not set
+            username = st.session_state.get('username', '')
+            if username.upper().startswith("QA"):
+                default_module = "AD"
+            else:
+                default_module = "EX"
+            
+            selected_module = st.session_state.get('selected_module', default_module)
             filtered_apis = {
                 name: config for name, config in st.session_state.apis.items() 
                 if config.get('module', 'EX') == selected_module
@@ -1099,7 +1125,15 @@ def main():
                 # Check if the current API matches the selected module
                 current_api_config = st.session_state.apis[st.session_state.current_api]
                 current_api_module = current_api_config.get('module', 'EX')
-                selected_module = st.session_state.get('selected_module', 'EX')
+                
+                # Determine default module based on username if not set
+                username = st.session_state.get('username', '')
+                if username.upper().startswith("QA"):
+                    default_module = "AD"
+                else:
+                    default_module = "EX"
+                
+                selected_module = st.session_state.get('selected_module', default_module)
                 
                 if current_api_module == selected_module:
                     display_api_tester(st.session_state.current_api, file_paths)
@@ -1112,7 +1146,14 @@ def main():
             else:
                 st.info("Select an API to test or add a new one.")
         else:
-            selected_module = st.session_state.get('selected_module', 'EX')
+            # Determine default module based on username if not set
+            username = st.session_state.get('username', '')
+            if username.upper().startswith("QA"):
+                default_module = "AD"
+            else:
+                default_module = "EX"
+            
+            selected_module = st.session_state.get('selected_module', default_module)
             module_name = "Assessment" if selected_module == "EX" else "Administration"
             st.info(f"Select an API from the {module_name} ({selected_module}) module to test or add a new one.")
 
@@ -1385,7 +1426,14 @@ def load_predefined_api(file_path):
         st.session_state.current_api = temp_api_name
         
         # Automatically switch to the correct module if different from current selection
-        current_selected_module = st.session_state.get('selected_module', 'EX')
+        # Determine default module based on username if not set
+        username = st.session_state.get('username', '')
+        if username.upper().startswith("QA"):
+            default_module = "AD"
+        else:
+            default_module = "EX"
+        
+        current_selected_module = st.session_state.get('selected_module', default_module)
         if config_module != current_selected_module:
             st.session_state.selected_module = config_module
             st.info(f"Switched to {config_module} module to display the loaded API.")
