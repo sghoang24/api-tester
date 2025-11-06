@@ -9,7 +9,7 @@
 ### 1. Đăng Nhập
 
 - **Người dùng thường**: Nhập tên đăng nhập để sử dụng
-- **Quản trị viên**: Sử dụng tài khoản `adminadmin` để quản lý cấu hình toàn cục
+- **Quản trị viên**: Sử dụng tài khoản `admin` để quản lý cấu hình toàn cục
 
 ### 2. Chọn Môi Trường
 

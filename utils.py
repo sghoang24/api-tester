@@ -319,8 +319,6 @@ def make_http_request(api: Dict[str, Any]) -> requests.Response:
     params = api.get('params', {})
     cookies = api.get('cookies', {})
     
-    print("URL:", url)
-    
     if method == "GET":
         return requests.get(url, headers=headers, params=params, cookies=cookies)
     elif method == "POST":
