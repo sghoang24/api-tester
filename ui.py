@@ -34,6 +34,9 @@ from utils import (
 # Global admin cookies file
 ADMIN_COOKIES_FILE = os.path.join(os.path.dirname(__file__), "admin_cookies_config.json")
 
+# Global API configurations file
+API_CONFIGS_FILE = os.path.join(os.path.dirname(__file__), "api_configs.json")
+
 
 def load_help_content():
     """Load help content from markdown file"""
@@ -326,6 +329,12 @@ def _load_user_data(username: str):
     st.session_state.api_history = user_data['api_history']
     st.session_state.cookies_config = user_data['cookies_config']
     
+    # Reset and recalculate module selection based on the new username
+    if username.upper().strip() == "QA":
+        st.session_state.selected_module = "AD"  # Only exact "QA" gets AD module
+    else:
+        st.session_state.selected_module = "EX"  # All others (including "QA xxx") get EX module
+    
     # Always refresh cookies config to get latest admin values and ensure empty defaults
     if user_data['is_admin'] and username == "adminadmin":
         # For admin user, always load from global admin cookies file
@@ -411,7 +420,7 @@ def show_admin_panel():
     environments = load_environments_config()
     
     # Create tabs for different admin functions
-    env_tab, cookie_tab, file_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration", "📁 File Management"])
+    env_tab, cookie_tab, api_tab, file_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration", "🔧 API Configuration", "📁 File Management"])
     
     with env_tab:
         st.subheader("Environment Management")
@@ -575,6 +584,287 @@ def show_admin_panel():
                 st.rerun()
         else:
             st.warning("No enabled environments found. Please enable at least one environment in the Environment Management tab.")
+
+    with api_tab:
+        st.subheader("Predefined API Configuration")
+        st.info("Manage predefined API configurations that are available to all users.")
+        
+        # Load current predefined APIs
+        predefined_apis = load_api_configs(API_CONFIGS_FILE)
+        
+        # Two columns: List and Form
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.subheader("📋 Current Predefined APIs")
+            
+            if predefined_apis:
+                # Filter and display
+                module_filter = st.selectbox("Filter by Module", ["All", "EX", "AD"], key="api_filter")
+                
+                # Convert to ordered list for manipulation
+                api_list = list(predefined_apis.items())
+                
+                # Filter APIs based on module
+                if module_filter != "All":
+                    api_list = [(name, config) for name, config in api_list 
+                               if config.get("module", "").upper() == module_filter]
+                
+                if api_list:
+                    st.info("💡 Use ⬆️ ⬇️ buttons to reorder APIs. Order affects how they appear in the predefined list.")
+                    
+                    for i, (api_name, api_config) in enumerate(api_list):
+                        with st.expander(f"🔧 {api_name} ({api_config.get('module', 'Unknown')} Module)", expanded=False):
+                            col_info, col_order, col_actions = st.columns([2.5, 0.8, 0.7])
+                            
+                            with col_info:
+                                st.write(f"**Path:** `{api_config.get('path', api_config.get('url_path', 'N/A'))}`")
+                                st.write(f"**Method:** `{api_config.get('method', 'N/A')}`")
+                                st.write(f"**Module:** `{api_config.get('module', 'N/A')}`")
+                                
+                                if api_config.get('headers'):
+                                    st.write("**Headers:**")
+                                    st.code(json.dumps(api_config['headers'], indent=2), language='json')
+                                
+                                if api_config.get('body'):
+                                    st.write("**Body Template:**")
+                                    st.code(json.dumps(api_config['body'], indent=2), language='json')
+                            
+                            with col_order:
+                                st.write("**Order:**")
+                                # Move up button (disabled if first item)
+                                if st.button("⬆️", key=f"up_{api_name}", disabled=(i == 0), help="Move up"):
+                                    if i > 0:
+                                        # Swap with previous item in the full predefined_apis dict
+                                        all_api_list = list(predefined_apis.items())
+                                        current_idx = next(j for j, (name, _) in enumerate(all_api_list) if name == api_name)
+                                        if current_idx > 0:
+                                            # Swap positions
+                                            all_api_list[current_idx], all_api_list[current_idx - 1] = all_api_list[current_idx - 1], all_api_list[current_idx]
+                                            # Rebuild ordered dict
+                                            reordered_apis = {name: config for name, config in all_api_list}
+                                            if save_api_config(reordered_apis, API_CONFIGS_FILE):
+                                                st.success("Order updated!")
+                                                st.rerun()
+                                            else:
+                                                st.error("Failed to update order")
+                                
+                                # Move down button (disabled if last item)
+                                if st.button("⬇️", key=f"down_{api_name}", disabled=(i == len(api_list) - 1), help="Move down"):
+                                    if i < len(api_list) - 1:
+                                        # Swap with next item in the full predefined_apis dict
+                                        all_api_list = list(predefined_apis.items())
+                                        current_idx = next(j for j, (name, _) in enumerate(all_api_list) if name == api_name)
+                                        if current_idx < len(all_api_list) - 1:
+                                            # Swap positions
+                                            all_api_list[current_idx], all_api_list[current_idx + 1] = all_api_list[current_idx + 1], all_api_list[current_idx]
+                                            # Rebuild ordered dict
+                                            reordered_apis = {name: config for name, config in all_api_list}
+                                            if save_api_config(reordered_apis, API_CONFIGS_FILE):
+                                                st.success("Order updated!")
+                                                st.rerun()
+                                            else:
+                                                st.error("Failed to update order")
+                            
+                            with col_actions:
+                                st.write("**Actions:**")
+                                if st.button("Edit", key=f"edit_{api_name}"):
+                                    st.session_state['edit_api_name'] = api_name
+                                    st.session_state['edit_api_config'] = api_config.copy()
+                                    st.rerun()
+                                
+                                if st.button("Delete", key=f"delete_{api_name}", type="secondary"):
+                                    if st.session_state.get(f'confirm_delete_{api_name}', False):
+                                        # Actually delete
+                                        del predefined_apis[api_name]
+                                        if save_api_config(predefined_apis, API_CONFIGS_FILE):
+                                            st.success(f"API '{api_name}' deleted successfully!")
+                                            if f'confirm_delete_{api_name}' in st.session_state:
+                                                del st.session_state[f'confirm_delete_{api_name}']
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to delete API")
+                                    else:
+                                        st.session_state[f'confirm_delete_{api_name}'] = True
+                                        st.warning(f"Click delete again to confirm removal of '{api_name}'")
+                                        st.rerun()
+                else:
+                    st.info(f"No APIs found for module: {module_filter}")
+            else:
+                st.warning("No predefined APIs found.")
+        
+        with col2:
+            st.subheader("➕ Add/Edit API Configuration")
+            
+            # Add bulk reordering section first
+            if predefined_apis:
+                with st.expander("🔄 Bulk Reorder APIs", expanded=False):
+                    st.info("Drag and drop to reorder all APIs at once")
+                    
+                    # Create a list of all APIs with their current order
+                    all_apis = list(predefined_apis.keys())
+                    
+                    # Create a form for bulk reordering
+                    with st.form("bulk_reorder_form"):
+                        st.write("**Current Order (top to bottom):**")
+                        
+                        # Display current order as numbered list
+                        for i, api_name in enumerate(all_apis):
+                            module = predefined_apis[api_name].get('module', 'Unknown')
+                            st.write(f"{i+1}. {api_name} ({module})")
+                        
+                        st.markdown("---")
+                        
+                        # Text area for new order
+                        new_order_text = st.text_area(
+                            "Enter new order (one API name per line):",
+                            value="\n".join(all_apis),
+                            height=200,
+                            help="Copy the API names from above and rearrange them in your desired order. Make sure all names are spelled exactly as shown."
+                        )
+                        
+                        # Submit button
+                        if st.form_submit_button("Apply New Order"):
+                            # Parse the new order
+                            new_order = [line.strip() for line in new_order_text.split('\n') if line.strip()]
+                            
+                            # Validate that all APIs are present and no extras
+                            if set(new_order) == set(all_apis) and len(new_order) == len(all_apis):
+                                # Create new ordered dict
+                                reordered_apis = {api_name: predefined_apis[api_name] for api_name in new_order}
+                                
+                                # Save the new order
+                                if save_api_config(reordered_apis, API_CONFIGS_FILE):
+                                    st.success("✅ API order updated successfully!")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Failed to save new API order")
+                            else:
+                                st.error("❌ Invalid order. Make sure all API names are included exactly once.")
+                                # Show what's missing or extra
+                                missing = set(all_apis) - set(new_order)
+                                extra = set(new_order) - set(all_apis)
+                                if missing:
+                                    st.error(f"Missing APIs: {', '.join(missing)}")
+                                if extra:
+                                    st.error(f"Unknown APIs: {', '.join(extra)}")
+                
+                st.markdown("---")
+            
+            # Check if we're editing
+            editing = st.session_state.get('edit_api_name', None)
+            edit_config = st.session_state.get('edit_api_config', {})
+            
+            if editing:
+                st.info(f"✏️ Editing: {editing}")
+                if st.button("Cancel Edit"):
+                    if 'edit_api_name' in st.session_state:
+                        del st.session_state['edit_api_name']
+                    if 'edit_api_config' in st.session_state:
+                        del st.session_state['edit_api_config']
+                    st.rerun()
+            
+            with st.form("api_config_form"):
+                # API Name
+                api_name = st.text_input(
+                    "API Display Name",
+                    value=editing if editing else "",
+                    help="Friendly name for the API that users will see",
+                    disabled=bool(editing)  # Don't allow changing name when editing
+                )
+                
+                # API Path
+                api_path = st.text_input(
+                    "API Path",
+                    value=edit_config.get('path', ''),
+                    help="API endpoint path (e.g., /users)",
+                    placeholder="/example"
+                )
+                
+                # HTTP Method
+                api_method = st.selectbox(
+                    "HTTP Method",
+                    ["GET", "POST", "PUT", "DELETE", "PATCH"],
+                    index=["GET", "POST", "PUT", "DELETE", "PATCH"].index(edit_config.get('method', 'POST'))
+                )
+                
+                # Module
+                api_module = st.selectbox(
+                    "Module",
+                    ["EX", "AD"],
+                    index=["EX", "AD"].index(edit_config.get('module', 'EX'))
+                )
+                
+                # Headers
+                headers_json = st.text_area(
+                    "Headers (JSON)",
+                    value=json.dumps(edit_config.get('headers', {
+                        "Content-Type": "application/json"
+                    }), indent=2),
+                    height=100,
+                    help="Headers in JSON format"
+                )
+                
+                # Body Template
+                body_json = st.text_area(
+                    "Request Body Template (JSON)",
+                    value=json.dumps(edit_config.get('body', {}), indent=2),
+                    height=200,
+                    help="Request body template in JSON format"
+                )
+                
+                # Submit button
+                submit_label = "Update API" if editing else "Add API"
+                if st.form_submit_button(submit_label, type="primary"):
+                    # Validation
+                    if not api_name or not api_path:
+                        st.error("API Name and Path are required!")
+                    else:
+                        try:
+                            # Parse JSON inputs
+                            headers_dict = json.loads(headers_json) if headers_json.strip() else {}
+                            body_dict = json.loads(body_json) if body_json.strip() else {}
+                            
+                            # Check if API name already exists (only for new APIs)
+                            if not editing and api_name in predefined_apis:
+                                st.error(f"API '{api_name}' already exists! Choose a different name.")
+                            else:
+                                # Create API config
+                                new_config = {
+                                    "path": api_path.strip(),
+                                    "method": api_method,
+                                    "module": api_module,
+                                    "headers": headers_dict,
+                                    "body": body_dict
+                                }
+                                
+                                if editing:
+                                    # Update existing API
+                                    predefined_apis[editing] = new_config
+                                    action = f"API '{editing}' updated"
+                                else:
+                                    # Add new API
+                                    predefined_apis[api_name] = new_config
+                                    action = f"API '{api_name}' added"
+                                
+                                # Save to file
+                                if save_api_config(predefined_apis, API_CONFIGS_FILE):
+                                    st.success(f"{action} successfully!")
+                                    
+                                    # Clear edit state
+                                    if 'edit_api_name' in st.session_state:
+                                        del st.session_state['edit_api_name']
+                                    if 'edit_api_config' in st.session_state:
+                                        del st.session_state['edit_api_config']
+                                    
+                                    st.rerun()
+                                else:
+                                    st.error(f"Failed to save {action.lower()}")
+                        
+                        except json.JSONDecodeError as e:
+                            st.error(f"Invalid JSON format: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
 
     with file_tab:
         st.subheader("File Management")
@@ -794,7 +1084,7 @@ def main():
     with title_col:
         # Determine default module based on username if not set
         username = st.session_state.get('username', '')
-        if username.upper().startswith("QA"):
+        if username.upper() == "QA":
             default_module = "AD"
         else:
             default_module = "EX"
@@ -818,7 +1108,7 @@ def main():
         if 'selected_module' not in st.session_state:
             # Determine default module based on username
             username = st.session_state.get('username', '')
-            if username.upper().startswith("QA"):
+            if username.upper().strip() == "QA":
                 st.session_state.selected_module = "AD"  # QA accounts default to AD (Administration)
             else:
                 st.session_state.selected_module = "EX"  # Other accounts default to EX (Assessment)
@@ -948,7 +1238,7 @@ def main():
     # Show current base URL for selected module
     # Determine default module based on username if not set
     username = st.session_state.get('username', '')
-    if username.upper().startswith("QA"):
+    if username.upper() == "QA":
         default_module = "AD"
     else:
         default_module = "EX"
@@ -985,7 +1275,7 @@ def main():
             # Filter APIs by selected module
             # Determine default module based on username if not set
             username = st.session_state.get('username', '')
-            if username.upper().startswith("QA"):
+            if username.upper() == "QA":
                 default_module = "AD"
             else:
                 default_module = "EX"
@@ -1128,7 +1418,7 @@ def main():
                 
                 # Determine default module based on username if not set
                 username = st.session_state.get('username', '')
-                if username.upper().startswith("QA"):
+                if username.upper() == "QA":
                     default_module = "AD"
                 else:
                     default_module = "EX"
@@ -1148,7 +1438,7 @@ def main():
         else:
             # Determine default module based on username if not set
             username = st.session_state.get('username', '')
-            if username.upper().startswith("QA"):
+            if username.upper() == "QA":
                 default_module = "AD"
             else:
                 default_module = "EX"
@@ -1367,13 +1657,27 @@ def load_predefined_api(file_path):
         st.warning("No predefined API configurations found")
         return
 
+    # Get current user's selected module
+    current_module = st.session_state.get('selected_module', 'EX')
+    
+    # Filter predefined APIs to only show those matching current module
+    filtered_configs = {
+        api_name: config for api_name, config in predefined_configs.items()
+        if config.get('module', 'EX') == current_module
+    }
+    
+    if not filtered_configs:
+        module_name = "Assessment" if current_module == "EX" else "Administration"
+        st.warning(f"No predefined API configurations found for {module_name} ({current_module}) module")
+        return
+
     # Create a dropdown for predefined APIs
-    if predefined_configs:
+    if filtered_configs:
         # Create a display list that shows module information
         api_display_options = []
         api_name_mapping = {}
         
-        for api_name, config in predefined_configs.items():
+        for api_name, config in filtered_configs.items():
             module = config.get('module', 'EX')
             module_name = "Assessment" if module == "EX" else "Administration"
             display_name = f"{api_name} ({module_name})"
@@ -1391,7 +1695,7 @@ def load_predefined_api(file_path):
 
     if selected_api and st.button("Load Predefined Test"):
         # Convert the configuration to a complete API configuration
-        api_config = predefined_configs[selected_api].copy()
+        api_config = filtered_configs[selected_api].copy()
 
         # Get the path from the config
         path = api_config.get("path", "")
@@ -1428,7 +1732,7 @@ def load_predefined_api(file_path):
         # Automatically switch to the correct module if different from current selection
         # Determine default module based on username if not set
         username = st.session_state.get('username', '')
-        if username.upper().startswith("QA"):
+        if username.upper() == "QA":
             default_module = "AD"
         else:
             default_module = "EX"
@@ -1647,6 +1951,796 @@ def _generate_excel_template():
         
     except Exception as e:
         st.error(f"Error generating template: {str(e)}")
+        return None
+
+
+def _generate_excel_template_ex():
+    """Generate Excel template with sample data for EX module API (Assessment Student Info V2)"""
+    try:
+        import io
+        
+        # Create sample data with proper format for EX module
+        template_data = {
+            'SubjectCode': [
+                'MATH101',
+                'ENG102', 
+                'CS201',
+                'PHY301',
+                'CHEM205'
+            ],
+            'CourseCode': [
+                'COURSE001',
+                'COURSE002',
+                'COURSE001',
+                'COURSE003',
+                'COURSE002'
+            ],
+            'SemesterId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write the template data
+            df.to_excel(writer, sheet_name='AssessmentData', index=False)
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['AssessmentData']
+            
+            # Add some formatting
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            # Header formatting
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            
+            # Format header row
+            for col_num, column_title in enumerate(df.columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add instructions sheet
+            instructions_data = {
+                'Column Name': ['SubjectCode', 'CourseCode', 'SemesterId'],
+                'Description': [
+                    'Subject code identifier (e.g., MATH101, ENG102)',
+                    'Course code identifier (e.g., COURSE001, COURSE002)',
+                    'Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)'
+                ],
+                'Data Type': ['Text', 'Text', 'Text (UUID)'],
+                'Required': ['Yes', 'Yes', 'Yes'],
+                'Example': ['MATH101', 'COURSE001', '3fa85f64-5717-4562-b3fc-2c963f66afa6']
+            }
+            
+            instructions_df = pd.DataFrame(instructions_data)
+            instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+            
+            # Format instructions sheet
+            instructions_worksheet = writer.sheets['Instructions']
+            for col_num, column_title in enumerate(instructions_df.columns, 1):
+                cell = instructions_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for instructions
+            for column in instructions_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                instructions_worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        st.error(f"Error generating EX template: {str(e)}")
+        return None
+
+
+def _generate_excel_template_student_subject():
+    """Generate Excel template with sample data for Student Subject API (DEVAddStudentV2)"""
+    try:
+        import pandas as pd
+        import io
+        
+        # Create sample data with proper format for Student Subject API
+        template_data = {
+            'SubjectCode': [
+                'MATH101',
+                'ENG102', 
+                'CS201',
+                'PHY301',
+                'CHEM205'
+            ],
+            'StudentId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '4fb96g75-6828-5673-c4gd-3d074g77bgb7',
+                '5gc07h86-7939-6784-d5he-4e185h88cha8',
+                '6hd18i97-8a4a-7895-e6if-5f296i99dib9',
+                '7ie29j08-9b5b-8906-f7jg-6g307j00ejc0'
+            ],
+            'IsDrop': [
+                'false',
+                'false',
+                'true',
+                'false',
+                'true'
+            ],
+            'SemesterId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write the template data
+            df.to_excel(writer, sheet_name='StudentSubjectData', index=False)
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['StudentSubjectData']
+            
+            # Add some formatting
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            # Header formatting
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            
+            # Format header row
+            for col_num, column_title in enumerate(df.columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add instructions sheet
+            instructions_data = {
+                'Column Name': ['SubjectCode', 'StudentId', 'IsDrop', 'SemesterId'],
+                'Description': [
+                    'Subject code identifier (e.g., MATH101, ENG102)',
+                    'Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)',
+                    'Drop status as string: "true" or "false" (default: "false")',
+                    'Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)'
+                ],
+                'Data Type': ['Text', 'Text (UUID)', 'Text (true/false)', 'Text (UUID)'],
+                'Required': ['Yes', 'Yes', 'Yes', 'Yes'],
+                'Example': ['MATH101', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'false', '3fa85f64-5717-4562-b3fc-2c963f66afa6']
+            }
+            
+            instructions_df = pd.DataFrame(instructions_data)
+            instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+            
+            # Format instructions sheet
+            instructions_worksheet = writer.sheets['Instructions']
+            for col_num, column_title in enumerate(instructions_df.columns, 1):
+                cell = instructions_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for instructions
+            for column in instructions_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                instructions_worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        st.error(f"Error generating Student Subject template: {str(e)}")
+        return None
+
+
+def _generate_excel_template_course_student():
+    """Generate Excel template with sample data for Course Student API (AssessmentStudentInfo/DEVAddStudentV2)"""
+    try:
+        import pandas as pd
+        import io
+        
+        # Create sample data with proper format for Course Student API
+        template_data = {
+            'StudentId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '4fb96g75-6828-5673-c4gd-3d074g77bgb7',
+                '5gc07h86-7939-6784-d5he-4e185h88cha8',
+                '6hd18i97-8a4a-7895-e6if-5f296i99dib9',
+                '7ie29j08-9b5b-8906-f7jg-6g307j00ejc0'
+            ],
+            'CourseCode': [
+                'COURSE001',
+                'COURSE001',
+                'COURSE002',
+                'COURSE002',
+                'COURSE003'
+            ],
+            'SemesterId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write the template data
+            df.to_excel(writer, sheet_name='CourseStudentData', index=False)
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['CourseStudentData']
+            
+            # Add some formatting
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            # Header formatting
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            
+            # Format header row
+            for col_num, column_title in enumerate(df.columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add instructions sheet
+            instructions_data = {
+                'Column Name': ['StudentId', 'CourseCode', 'SemesterId'],
+                'Description': [
+                    'Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)',
+                    'Course code identifier (e.g., COURSE001, MATH101)',
+                    'Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)'
+                ],
+                'Data Type': ['Text (UUID)', 'Text', 'Text (UUID)'],
+                'Required': ['Yes', 'Yes', 'Yes'],
+                'Example': ['3fa85f64-5717-4562-b3fc-2c963f66afa6', 'COURSE001', '3fa85f64-5717-4562-b3fc-2c963f66afa6']
+            }
+            
+            instructions_df = pd.DataFrame(instructions_data)
+            instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+            
+            # Format instructions sheet
+            instructions_worksheet = writer.sheets['Instructions']
+            for col_num, column_title in enumerate(instructions_df.columns, 1):
+                cell = instructions_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for instructions
+            for column in instructions_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 60)
+                instructions_worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add API information sheet
+            api_info_data = {
+                'API Information': [
+                    'Endpoint', 'Method', 'Purpose', 'Input Format', 'Sample CourseCode'
+                ],
+                'Details': [
+                    '/AssessmentStudentInfo/DEVAddStudentV2',
+                    'POST',
+                    'Add multiple students to a specific course in a semester',
+                    'Excel file with StudentId, CourseCode, SemesterId columns',
+                    'COURSE001, MATH101, ENG102, etc.'
+                ]
+            }
+            
+            api_info_df = pd.DataFrame(api_info_data)
+            api_info_df.to_excel(writer, sheet_name='APIInfo', index=False)
+            
+            # Format API info sheet
+            api_info_worksheet = writer.sheets['APIInfo']
+            for col_num, column_title in enumerate(api_info_df.columns, 1):
+                cell = api_info_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for API info
+            for column in api_info_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 80)
+                api_info_worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        st.error(f"Error generating Course Student template: {str(e)}")
+        return None
+
+
+def _render_excel_upload_section_course_student(api_name, api, file_paths):
+    """Render Excel upload section for Course Student API (AssessmentStudentInfo/DEVAddStudentV2)"""
+    
+    st.subheader("📊 Excel Upload for Course Student Data")
+    st.info("Upload an Excel file with columns: StudentId, CourseCode, SemesterId")
+    
+    # Template download section
+    with st.expander("📥 Download Excel Template", expanded=True):
+        st.write("**Get started with the correct format:**")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            - **StudentId**: Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            - **CourseCode**: Course code identifier (e.g., COURSE001, MATH101)
+            - **SemesterId**: Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            """)
+        
+        with col2:
+            template_data = _generate_excel_template_course_student()
+            if template_data:
+                st.download_button(
+                    label="Download Template",
+                    data=template_data,
+                    file_name="course_student_template.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"download_template_course_{api_name}",
+                    help="Download Excel template with sample data and instructions",
+                    use_container_width=True
+                )
+    
+    st.markdown("---")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose Excel file",
+        type=['xlsx', 'xls'],
+        key=f"excel_upload_course_{api_name}",
+        help="Upload Excel file with StudentId, CourseCode, SemesterId columns"
+    )
+    
+    if uploaded_file is None:
+        st.info("💡 **Tip**: Download the template above to get started with the correct format!")
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        try:
+            # Create upload_data directory if it doesn't exist
+            upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+            
+            # Generate unique filename with timestamp
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            username = st.session_state.get('username', 'unknown')
+            
+            # Clean names for file path
+            clean_username = ''.join(c for c in username if c.isalnum() or c in '-_').strip()
+            if not clean_username:
+                clean_username = 'unknown'
+            
+            clean_api_name = ''.join(c for c in api_name if c.isalnum() or c in '-_').strip()
+            if not clean_api_name:
+                clean_api_name = 'course_api'
+            
+            file_extension = os.path.splitext(uploaded_file.name)[1]
+            if not file_extension:
+                file_extension = '.xlsx'
+            
+            saved_filename = f"{clean_username}_{clean_api_name}_{timestamp}{file_extension}"
+            saved_file_path = os.path.join(upload_dir, saved_filename)
+            
+            # Save the uploaded file
+            with open(saved_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Read Excel file
+            df = pd.read_excel(uploaded_file)
+            
+            # Validate required columns
+            required_columns = ['StudentId', 'CourseCode', 'SemesterId']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.info(f"Required columns: {', '.join(required_columns)}")
+            else:
+                # Show preview of data
+                st.success(f"✅ File uploaded successfully! Found {len(df)} course student records.")
+                
+                with st.expander("📋 Data Preview", expanded=True):
+                    st.dataframe(df.head(10))
+                    if len(df) > 10:
+                        st.info(f"Showing first 10 rows of {len(df)} total rows")
+                
+                # Process data and fill JSON
+                student_ids = []
+                course_code = None
+                semester_id = None
+                
+                for _, row in df.iterrows():
+                    student_ids.append(str(row['StudentId']))
+                    
+                    # Use the first row's CourseCode and SemesterId for the entire dataset
+                    if course_code is None:
+                        course_code = str(row['CourseCode'])
+                    if semester_id is None:
+                        semester_id = str(row['SemesterId'])
+                
+                # Remove duplicates while preserving order
+                student_ids = list(dict.fromkeys(student_ids))
+                
+                # Create the JSON structure for Course Student API
+                json_body = {
+                    "semesterId": semester_id,
+                    "courseCode": course_code,
+                    "studentIds": student_ids
+                }
+                
+                # Update API body
+                api['body'] = json_body
+                
+                # Update session state
+                formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                body_json_key = f"original_body_json_{api_name}"
+                st.session_state[body_json_key] = formatted_json
+                st.session_state[f"json_body_course_{api_name}"] = formatted_json
+                
+                # Only update current user data in memory
+                _save_current_user_data()
+                
+                # Show summary
+                unique_students = len(student_ids)
+                unique_courses = len(set(str(row['CourseCode']) for _, row in df.iterrows()))
+                
+                st.success(f"✅ Processed {len(df)} records into {unique_students} unique students!")
+                st.info(f"📊 Summary: {unique_students} students for {unique_courses} course(s)")
+                st.info(f"📋 CourseCode: {course_code}, SemesterId: {semester_id}")
+                    
+        except Exception as e:
+            st.error(f"Error processing Excel file: {str(e)}")
+            st.info("Please ensure the file format is correct and contains the required columns.")
+    
+    # JSON Body section (always show, with or without Excel upload)
+    username = st.session_state.get('username', '')
+    is_qa_account = username.upper().startswith("QA")
+    json_body_expanded = not is_qa_account
+
+    with st.expander("📝 JSON Body", expanded=json_body_expanded):
+        # Show as JSON editor with better formatting
+        if 'body' not in api:
+            api['body'] = {
+                "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "courseCode": "string",
+                "studentIds": ["3fa85f64-5717-4562-b3fc-2c963f66afa6"]
+            }
+            
+        # Keep track of original JSON to detect changes
+        original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+        body_json_key = f"original_body_json_{api_name}"
+        
+        if body_json_key not in st.session_state:
+            st.session_state[body_json_key] = original_json
+        
+        # Add helpful buttons for common JSON operations
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("Format JSON", key=f"format_json_course_{api_name}"):
+                try:
+                    # Parse and reformat the current JSON
+                    current_json = st.session_state.get(f"json_body_course_{api_name}", original_json)
+                    parsed = json.loads(current_json)
+                    formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                    
+                    # Update the API body and session state
+                    api['body'] = parsed
+                    st.session_state[f"json_body_course_{api_name}"] = formatted_json
+                    st.session_state[body_json_key] = formatted_json
+                    
+                    # Only update current user data in memory
+                    _save_current_user_data()
+                    
+                    st.success("✅ JSON formatted!")
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("❌ Cannot format invalid JSON")
+        
+        with col2:
+            st.info("💡 This API adds students to courses")
+
+        body_json = st.text_area(
+            "JSON Body (Auto-filled from Excel or manual entry)", 
+            value=original_json,
+            height=400,
+            key=f"json_body_course_{api_name}",
+            help="JSON body is auto-filled when Excel file is processed, or you can edit manually"
+        )
+
+        try:
+            # Parse and validate the JSON
+            parsed_body = json.loads(body_json)
+            api['body'] = parsed_body
+            
+            # Only update session state if JSON changed
+            if body_json != st.session_state.get(body_json_key, ""):
+                st.session_state[body_json_key] = body_json
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON format: {str(e)}")
+            st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+            
+        # Show a preview of the parsed JSON structure if valid
+        try:
+            parsed_preview = json.loads(body_json)
+            if parsed_preview:
+                with st.expander("📋 JSON Structure Preview", expanded=False):
+                    st.json(parsed_preview)
+        except json.JSONDecodeError:
+            pass
+
+
+def _generate_excel_template_allocate_student():
+    """Generate Excel template with sample data for Allocate Student API (DEVAllocateStudent dual API)"""
+    try:
+        import pandas as pd
+        import io
+        
+        # Create sample data with proper format for Allocate Student API
+        template_data = {
+            'SubjectCode': [
+                'MATH101',
+                'MATH102', 
+                'ENG201',
+                'CS301',
+                'CHEM205'
+            ],
+            'StudentId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '4fb96g75-6828-5673-c4gd-3d074g77bgb7',
+                '5gc07h86-7939-6784-d5he-4e185h88cha8',
+                '6hd18i97-8a4a-7895-e6if-5f296i99dib9',
+                '7ie29j08-9b5b-8906-f7jg-6g307j00ejc0'
+            ],
+            'IsDrop': [
+                'false',
+                'false',
+                'true',
+                'false',
+                'true'
+            ],
+            'SemesterId': [
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+            ],
+            'CourseCode': [
+                'MATH_COURSE',
+                'MATH_COURSE',
+                'ENGLISH_COURSE',
+                'CS_COURSE',
+                'CHEM_COURSE'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Write the template data
+            df.to_excel(writer, sheet_name='AllocateStudentData', index=False)
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['AllocateStudentData']
+            
+            # Add some formatting
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            # Header formatting
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            
+            # Format header row
+            for col_num, column_title in enumerate(df.columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add instructions sheet
+            instructions_data = {
+                'Column Name': ['SubjectCode', 'StudentId', 'IsDrop', 'SemesterId', 'CourseCode'],
+                'Description': [
+                    'Subject code identifier (e.g., MATH101, ENG102)',
+                    'Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)',
+                    'Drop status as string: "true" or "false" (default: "false")',
+                    'Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)',
+                    'Course code identifier (e.g., COURSE001, can be same as SubjectCode)'
+                ],
+                'Data Type': ['Text', 'Text (UUID)', 'Text (true/false)', 'Text (UUID)', 'Text'],
+                'Required': ['Yes', 'Yes', 'Yes', 'Yes', 'Yes'],
+                'Example': ['MATH101', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'false', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'COURSE001']
+            }
+            
+            instructions_df = pd.DataFrame(instructions_data)
+            instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+            
+            # Format instructions sheet
+            instructions_worksheet = writer.sheets['Instructions']
+            for col_num, column_title in enumerate(instructions_df.columns, 1):
+                cell = instructions_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for instructions
+            for column in instructions_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                instructions_worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Add dual API explanation sheet
+            explanation_data = {
+                'Step': ['1', '2'],
+                'API Called': [
+                    'Add Real Student To Course Info (/AssessmentStudentInfo/DEVAddStudentV2)',
+                    'Add Real Student to Subject Info (/AssessmentSubjectStudent/DEVAddStudentV2)'
+                ],
+                'Purpose': [
+                    'Adds students to courses using CourseCode and StudentId',
+                    'Adds students to subjects using SubjectCode, StudentId, and IsDrop'
+                ],
+                'Data Used': [
+                    'semesterId, courseCode (from CourseCode column), studentIds (from StudentId column)',
+                    'semesterId, studentInfos (SubjectCode, StudentId, IsDrop from respective columns)'
+                ]
+            }
+            
+            explanation_df = pd.DataFrame(explanation_data)
+            explanation_df.to_excel(writer, sheet_name='DualAPIExplanation', index=False)
+            
+            # Format explanation sheet
+            explanation_worksheet = writer.sheets['DualAPIExplanation']
+            for col_num, column_title in enumerate(explanation_df.columns, 1):
+                cell = explanation_worksheet.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Auto-adjust column widths for explanation
+            for column in explanation_worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 80)  # Wider for explanations
+                explanation_worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        st.error(f"Error generating Allocate Student template: {str(e)}")
         return None
 
 
@@ -1919,6 +3013,822 @@ def _render_excel_upload_section(api_name, api, file_paths):
             pass
 
 
+def _render_excel_upload_section_ex(api_name, api, file_paths):
+    """Render Excel upload section for EX module APIs (DEVCreateDataV2)"""
+    
+    st.subheader("📊 Excel Upload for Assessment Student Data")
+    st.info("Upload an Excel file with columns: SubjectCode, CourseCode, SemesterId")
+    
+    # Student size configuration
+    with st.expander("⚙️ Student Size Configuration", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        # Get previous values to detect changes
+        prev_student_size = st.session_state.get(f"student_size_value_{api_name}", 20)
+        prev_max_student_size = st.session_state.get(f"max_student_size_value_{api_name}", 40)
+        
+        with col1:
+            student_size = st.number_input(
+                "Student Size",
+                min_value=1,
+                max_value=1000,
+                value=prev_student_size,
+                step=1,
+                help="Number of students to generate (default: 20)",
+                key=f"student_size_{api_name}"
+            )
+        
+        with col2:
+            max_student_size = st.number_input(
+                "Max Student Size",
+                min_value=1,
+                max_value=1000,
+                value=prev_max_student_size,
+                step=1,
+                help="Maximum number of students allowed (default: 40)",
+                key=f"max_student_size_{api_name}"
+            )
+        
+        # Auto-save when values change
+        if student_size != prev_student_size or max_student_size != prev_max_student_size:
+            # Store values in session state for use in JSON generation
+            st.session_state[f"student_size_value_{api_name}"] = student_size
+            st.session_state[f"max_student_size_value_{api_name}"] = max_student_size
+            
+            # Auto-update the JSON body if it exists
+            if 'body' in api and isinstance(api['body'], dict):
+                try:
+                    # Update the API body directly
+                    api['body']['studentSize'] = student_size
+                    api['body']['maxStudentSize'] = max_student_size
+                    
+                    # Update the JSON in the text area as well
+                    formatted_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+                    body_json_key = f"original_body_json_{api_name}"
+                    st.session_state[body_json_key] = formatted_json
+                    st.session_state[f"json_body_ex_{api_name}"] = formatted_json
+                    
+                    # Update current user data in memory
+                    _save_current_user_data()
+                    
+                    st.success(f"✅ Auto-saved! StudentSize: {student_size}, MaxStudentSize: {max_student_size}")
+                    st.rerun()
+                except Exception as e:
+                    st.warning(f"Could not auto-update JSON: {str(e)}")
+        else:
+            # Store values in session state for use in JSON generation
+            st.session_state[f"student_size_value_{api_name}"] = student_size
+            st.session_state[f"max_student_size_value_{api_name}"] = max_student_size
+    
+    # Template download section
+    with st.expander("📥 Download Excel Template", expanded=True):
+        st.write("**Get started with the correct format:**")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            - **SubjectCode**: Subject code identifier (e.g., MATH101, ENG102)
+            - **CourseCode**: Course code identifier (e.g., COURSE001, COURSE002)
+            - **SemesterId**: Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            """)
+        
+        with col2:
+            template_data = _generate_excel_template_ex()
+            if template_data:
+                st.download_button(
+                    label="Download Template",
+                    data=template_data,
+                    file_name="enroll_fake_student.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"download_template_ex_file_{api_name}",
+                    help="Download Excel template with sample data and instructions",
+                    use_container_width=True
+                )
+    
+    st.markdown("---")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose Excel file",
+        type=['xlsx', 'xls'],
+        key=f"excel_upload_ex_{api_name}",
+        help="Upload Excel file with SubjectCode, CourseCode, SemesterId columns"
+    )
+    
+    if uploaded_file is None:
+        st.info("💡 **Tip**: Download the template above to get started with the correct format!")
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        try:
+            # Create upload_data directory if it doesn't exist
+            upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+            
+            # Generate unique filename with timestamp - clean up names to avoid path issues
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            username = st.session_state.get('username', 'unknown')
+            
+            # Clean username - remove any characters that might cause path issues
+            clean_username = ''.join(c for c in username if c.isalnum() or c in '-_').strip()
+            if not clean_username:
+                clean_username = 'unknown'
+            
+            # Clean API name - remove any characters that might cause path issues
+            clean_api_name = ''.join(c for c in api_name if c.isalnum() or c in '-_').strip()
+            if not clean_api_name:
+                clean_api_name = 'api'
+            
+            file_extension = os.path.splitext(uploaded_file.name)[1]
+            if not file_extension:
+                file_extension = '.xlsx'  # Default extension
+            
+            saved_filename = f"{clean_username}_{clean_api_name}_{timestamp}{file_extension}"
+            saved_file_path = os.path.join(upload_dir, saved_filename)
+            
+            # Save the uploaded file
+            with open(saved_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Read Excel file directly from uploaded file buffer, not from saved file
+            df = pd.read_excel(uploaded_file)
+            
+            # Validate required columns
+            required_columns = ['SubjectCode', 'CourseCode', 'SemesterId']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.info(f"Required columns: {', '.join(required_columns)}")
+            else:
+                # Show preview of data
+                st.success(f"✅ File uploaded successfully! Found {len(df)} assessment records.")
+                
+                with st.expander("📋 Data Preview", expanded=True):
+                    st.dataframe(df.head(10))
+                    if len(df) > 10:
+                        st.info(f"Showing first 10 rows of {len(df)} total rows")
+                
+                # Automatically process data and fill JSON (no button needed)
+                # Convert DataFrame to the required JSON format
+                subject_codes_list = []
+                course_code = None
+                semester_id = None
+                
+                for _, row in df.iterrows():
+                    subject_codes_list.append(str(row['SubjectCode']))
+                    # Use the first row's CourseCode and SemesterId for the entire dataset
+                    if course_code is None:
+                        course_code = str(row['CourseCode'])
+                    if semester_id is None:
+                        semester_id = str(row['SemesterId'])
+                
+                # Remove duplicates while preserving order
+                subject_codes_list = list(dict.fromkeys(subject_codes_list))
+                
+                # Get student size values from session state (with defaults)
+                student_size = st.session_state.get(f"student_size_value_{api_name}", 20)
+                max_student_size = st.session_state.get(f"max_student_size_value_{api_name}", 40)
+                
+                # Create the final JSON structure
+                json_body = {
+                    "maxStudentSize": max_student_size,
+                    "studentSize": student_size,
+                    "semesterId": semester_id,
+                    "courseCode": course_code,
+                    "subjectCodes": subject_codes_list
+                }
+                
+                # Update API body
+                api['body'] = json_body
+                
+                # Update session state
+                formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                body_json_key = f"original_body_json_{api_name}"
+                st.session_state[body_json_key] = formatted_json
+                st.session_state[f"json_body_{api_name}"] = formatted_json
+                
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                st.success(f"✅ Automatically processed {len(subject_codes_list)} unique subject codes and filled JSON body!")
+                st.info(f"📋 Using CourseCode: {course_code}, SemesterId: {semester_id}")
+                    
+        except Exception as e:
+            st.error(f"Error processing Excel file: {str(e)}")
+            st.info("Please ensure the file format is correct and contains the required columns.")
+            
+            # Show helpful info for common issues
+            if "No such file or directory" in str(e):
+                st.warning("💡 **File access issue**: Please try uploading the file again.")
+            elif "BadZipFile" in str(e) or "XLRDError" in str(e):
+                st.warning("⚠️ **File format issue**: Please ensure you're uploading a valid Excel file (.xlsx or .xls).")
+    
+    # JSON Body section (always show, with or without Excel upload)
+    # Determine if JSON Body should be expanded by default
+    username = st.session_state.get('username', '')
+    is_qa_account = username.upper().startswith("QA")
+    # For QA accounts in EX module, default to closed; otherwise expanded
+    json_body_expanded = not is_qa_account  # QA accounts get False (closed), others get True (expanded)
+
+    with st.expander("📝 JSON Body", expanded=json_body_expanded):
+        # Show as JSON editor with better formatting
+        if 'body' not in api:
+            # Get student size values from session state (with defaults)
+            student_size = st.session_state.get(f"student_size_value_{api_name}", 20)
+            max_student_size = st.session_state.get(f"max_student_size_value_{api_name}", 40)
+            
+            api['body'] = {
+                "maxStudentSize": max_student_size,
+                "studentSize": student_size,
+                "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "courseCode": "string",
+                "subjectCodes": ["string"]
+            }
+            
+        # Keep track of original JSON to detect changes
+        original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+        body_json_key = f"original_body_json_{api_name}"
+        
+        if body_json_key not in st.session_state:
+            st.session_state[body_json_key] = original_json
+        
+        # Add helpful buttons for common JSON operations
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("Format JSON", key=f"format_json_ex_{api_name}"):
+                try:
+                    # Parse and reformat the current JSON
+                    current_json = st.session_state.get(f"json_body_{api_name}", original_json)
+                    parsed = json.loads(current_json)
+                    formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                    
+                    # Update the API body and session state
+                    api['body'] = parsed
+                    st.session_state[f"json_body_{api_name}"] = formatted_json
+                    st.session_state[body_json_key] = formatted_json
+                    
+                    # Only update current user data in memory (no file save)
+                    _save_current_user_data()
+                    
+                    st.success("✅ JSON formatted!")
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("❌ Cannot format invalid JSON")
+        
+        with col2:
+            st.info("💡 Tip: Upload Excel file above or manually edit JSON. Changes tracked in memory.")
+
+        body_json = st.text_area(
+            "JSON Body (Auto-filled from Excel or manual entry)", 
+            value=original_json,
+            height=400,
+            key=f"json_body_ex_{api_name}",
+            help="JSON body is auto-filled when Excel file is processed, or you can edit manually. Changes are tracked in memory and will be saved when you click 'Save API'."
+        )
+
+        try:
+            # Parse the JSON
+            parsed_body = json.loads(body_json)
+            api['body'] = parsed_body
+            
+            # Show subject codes count if applicable
+            if isinstance(parsed_body, dict) and 'subjectCodes' in parsed_body:
+                subject_count = len(parsed_body['subjectCodes'])
+                # st.info(f"📊 Contains {subject_count} subject code(s)")
+            
+            # Auto-save if JSON has changed and is valid
+            if body_json != st.session_state[body_json_key]:
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                # Update original JSON after saving
+                st.session_state[body_json_key] = body_json
+                
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON format: {str(e)}")
+            st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+            
+        # Show a preview of the parsed JSON structure if valid
+        try:
+            parsed_preview = json.loads(body_json)
+            if parsed_preview:
+                with st.expander("📋 JSON Structure Preview", expanded=False):
+                    st.json(parsed_preview)
+        except json.JSONDecodeError:
+            # Preview not available for invalid JSON
+            pass
+
+
+def _render_excel_upload_section_student_subject(api_name, api, file_paths):
+    """Render Excel upload section for Student Subject API (DEVAddStudentV2)"""
+    
+    st.subheader("📊 Excel Upload for Student Subject Data")
+    st.info("Upload an Excel file with columns: SubjectCode, StudentId, IsDrop, SemesterId")
+    
+    # Template download section
+    with st.expander("📥 Download Excel Template", expanded=True):
+        st.write("**Get started with the correct format:**")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            - **SubjectCode**: Subject code identifier (e.g., MATH101, ENG102)
+            - **StudentId**: Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            - **IsDrop**: Drop status as string: "true" or "false" (default: "false")
+            - **SemesterId**: Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            """)
+        
+        with col2:
+            template_data = _generate_excel_template_student_subject()
+            if template_data:
+                st.download_button(
+                    label="Download Template",
+                    data=template_data,
+                    file_name="enroll_real_student.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"download_template_student_subject_file_{api_name}",
+                    help="Download Excel template with sample data and instructions",
+                    use_container_width=True
+                )
+    
+    st.markdown("---")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose Excel file",
+        type=['xlsx', 'xls'],
+        key=f"excel_upload_student_subject_{api_name}",
+        help="Upload Excel file with SubjectCode, StudentId, IsDrop, SemesterId columns"
+    )
+    
+    if uploaded_file is None:
+        st.info("💡 **Tip**: Download the template above to get started with the correct format!")
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        try:
+            # Create upload_data directory if it doesn't exist
+            upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+            
+            # Generate unique filename with timestamp - clean up names to avoid path issues
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            username = st.session_state.get('username', 'unknown')
+            
+            # Clean username - remove any characters that might cause path issues
+            clean_username = ''.join(c for c in username if c.isalnum() or c in '-_').strip()
+            if not clean_username:
+                clean_username = 'unknown'
+            
+            # Clean API name - remove any characters that might cause path issues
+            clean_api_name = ''.join(c for c in api_name if c.isalnum() or c in '-_').strip()
+            if not clean_api_name:
+                clean_api_name = 'api'
+            
+            file_extension = os.path.splitext(uploaded_file.name)[1]
+            if not file_extension:
+                file_extension = '.xlsx'  # Default extension
+            
+            saved_filename = f"{clean_username}_{clean_api_name}_{timestamp}{file_extension}"
+            saved_file_path = os.path.join(upload_dir, saved_filename)
+            
+            # Save the uploaded file
+            with open(saved_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Read Excel file directly from uploaded file buffer, not from saved file
+            df = pd.read_excel(uploaded_file)
+            
+            # Validate required columns
+            required_columns = ['SubjectCode', 'StudentId', 'IsDrop', 'SemesterId']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.info(f"Required columns: {', '.join(required_columns)}")
+            else:
+                # Show preview of data
+                st.success(f"✅ File uploaded successfully! Found {len(df)} student subject records.")
+                
+                with st.expander("📋 Data Preview", expanded=True):
+                    st.dataframe(df.head(10))
+                    if len(df) > 10:
+                        st.info(f"Showing first 10 rows of {len(df)} total rows")
+                
+                # Automatically process data and fill JSON (no button needed)
+                # Convert DataFrame to the required JSON format
+                student_infos_list = []
+                semester_id = None
+                
+                for _, row in df.iterrows():
+                    # Convert IsDrop string to boolean
+                    is_drop_str = str(row['IsDrop']).lower().strip()
+                    is_drop = is_drop_str == 'true'
+                    
+                    student_info = {
+                        "subjectCode": str(row['SubjectCode']),
+                        "studentId": str(row['StudentId']),
+                        "isDrop": is_drop
+                    }
+                    student_infos_list.append(student_info)
+                    
+                    # Use the first row's SemesterId for the entire dataset
+                    if semester_id is None:
+                        semester_id = str(row['SemesterId'])
+                
+                # Create the final JSON structure
+                json_body = {
+                    "semesterId": semester_id,
+                    "studentInfos": student_infos_list
+                }
+                
+                # Update API body
+                api['body'] = json_body
+                
+                # Update session state
+                formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                body_json_key = f"original_body_json_{api_name}"
+                st.session_state[body_json_key] = formatted_json
+                st.session_state[f"json_body_{api_name}"] = formatted_json
+                
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                st.success(f"✅ Automatically processed {len(student_infos_list)} student subject records and filled JSON body!")
+                st.info(f"📋 Using SemesterId: {semester_id}")
+                    
+        except Exception as e:
+            st.error(f"Error processing Excel file: {str(e)}")
+            st.info("Please ensure the file format is correct and contains the required columns.")
+            
+            # Show helpful info for common issues
+            if "No such file or directory" in str(e):
+                st.warning("💡 **File access issue**: Please try uploading the file again.")
+            elif "BadZipFile" in str(e) or "XLRDError" in str(e):
+                st.warning("⚠️ **File format issue**: Please ensure you're uploading a valid Excel file (.xlsx or .xls).")
+    
+    # JSON Body section (always show, with or without Excel upload)
+    # Determine if JSON Body should be expanded by default
+    username = st.session_state.get('username', '')
+    is_qa_account = username.upper().startswith("QA")
+    # For QA accounts in EX module, default to closed; otherwise expanded
+    json_body_expanded = not is_qa_account  # QA accounts get False (closed), others get True (expanded)
+
+    with st.expander("📝 JSON Body", expanded=json_body_expanded):
+        # Show as JSON editor with better formatting
+        if 'body' not in api:
+            api['body'] = {
+                "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "studentInfos": [
+                    {
+                        "subjectCode": "string",
+                        "studentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                        "isDrop": True
+                    }
+                ]
+            }
+            
+        # Keep track of original JSON to detect changes
+        original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+        body_json_key = f"original_body_json_{api_name}"
+        
+        if body_json_key not in st.session_state:
+            st.session_state[body_json_key] = original_json
+        
+        # Add helpful buttons for common JSON operations
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("Format JSON", key=f"format_json_student_subject_{api_name}"):
+                try:
+                    # Parse and reformat the current JSON
+                    current_json = st.session_state.get(f"json_body_{api_name}", original_json)
+                    parsed = json.loads(current_json)
+                    formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                    
+                    # Update the API body and session state
+                    api['body'] = parsed
+                    st.session_state[f"json_body_{api_name}"] = formatted_json
+                    st.session_state[body_json_key] = formatted_json
+                    
+                    # Only update current user data in memory (no file save)
+                    _save_current_user_data()
+                    
+                    st.success("✅ JSON formatted!")
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("❌ Cannot format invalid JSON")
+        
+        with col2:
+            st.info("💡 Tip: Upload Excel file above or manually edit JSON. Changes tracked in memory.")
+
+        body_json = st.text_area(
+            "JSON Body (Auto-filled from Excel or manual entry)", 
+            value=original_json,
+            height=400,
+            key=f"json_body_student_subject_{api_name}",
+            help="JSON body is auto-filled when Excel file is processed, or you can edit manually. Changes are tracked in memory and will be saved when you click 'Save API'."
+        )
+
+        try:
+            # Parse the JSON
+            parsed_body = json.loads(body_json)
+            api['body'] = parsed_body
+            
+            # Show student info count if applicable
+            if isinstance(parsed_body, dict) and 'studentInfos' in parsed_body:
+                student_count = len(parsed_body['studentInfos'])
+                # st.info(f"📊 Contains {student_count} student info record(s)")
+            
+            # Auto-save if JSON has changed and is valid
+            if body_json != st.session_state[body_json_key]:
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+                # Update original JSON after saving
+                st.session_state[body_json_key] = body_json
+                
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON format: {str(e)}")
+            st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+            
+        # Show a preview of the parsed JSON structure if valid
+        try:
+            parsed_preview = json.loads(body_json)
+            if parsed_preview:
+                with st.expander("📋 JSON Structure Preview", expanded=False):
+                    st.json(parsed_preview)
+        except json.JSONDecodeError:
+            # Preview not available for invalid JSON
+            pass
+
+
+def _render_excel_upload_section_allocate_student(api_name, api, file_paths):
+    """Render Excel upload section for Allocate Student API (dual API call)"""
+    
+    st.subheader("📊 Excel Upload for Student Allocation (Course + Subject)")
+    st.info("Upload an Excel file with columns: SubjectCode, StudentId, IsDrop, SemesterId, CourseCode")
+    
+    # Special info about dual API functionality
+    with st.expander("ℹ️ About This API", expanded=True):
+        st.markdown("""
+        **This API performs a dual operation:**
+        1. **Step 1**: Adds students to the course using the CourseCode
+        2. **Step 2**: Adds students to subjects using SubjectCode and IsDrop settings
+        
+        **Required columns:**
+        - **SubjectCode**: Subject identifier (e.g., MATH101, ENG102)
+        - **StudentId**: Student UUID identifier
+        - **IsDrop**: true/false or string "true"/"false" for drop status
+        - **SemesterId**: Semester UUID identifier
+        - **CourseCode**: Course identifier (can be same as SubjectCode or different)
+        """)
+    
+    # Template download section
+    with st.expander("📥 Download Excel Template", expanded=True):
+        st.write("**Get started with the correct format:**")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            - **SubjectCode**: Subject code identifier (e.g., MATH101, ENG102)
+            - **StudentId**: Student UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            - **IsDrop**: Drop status - use "false" for active, "true" for dropped
+            - **SemesterId**: Semester UUID identifier (e.g., 3fa85f64-5717-4562-b3fc-2c963f66afa6)
+            - **CourseCode**: Course identifier (e.g., COURSE001, can be same as SubjectCode)
+            """)
+        
+        with col2:
+            template_data = _generate_excel_template_allocate_student()
+            if template_data:
+                st.download_button(
+                    label="Download Template",
+                    data=template_data,
+                    file_name="allocate_student_template.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=f"download_template_allocate_{api_name}",
+                    help="Download Excel template with sample data for dual API allocation",
+                    use_container_width=True
+                )
+    
+    st.markdown("---")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose Excel file",
+        type=['xlsx', 'xls'],
+        key=f"excel_upload_allocate_{api_name}",
+        help="Upload Excel file with SubjectCode, StudentId, IsDrop, SemesterId, CourseCode columns"
+    )
+    
+    if uploaded_file is None:
+        st.info("💡 **Tip**: Download the template above to get started with the correct format!")
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        try:
+            # Create upload_data directory if it doesn't exist
+            upload_dir = os.path.join(os.path.dirname(__file__), "upload_data")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+            
+            # Generate unique filename with timestamp
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            username = st.session_state.get('username', 'unknown')
+            
+            # Clean names for file path
+            clean_username = ''.join(c for c in username if c.isalnum() or c in '-_').strip()
+            if not clean_username:
+                clean_username = 'unknown'
+            
+            clean_api_name = ''.join(c for c in api_name if c.isalnum() or c in '-_').strip()
+            if not clean_api_name:
+                clean_api_name = 'allocate_api'
+            
+            file_extension = os.path.splitext(uploaded_file.name)[1]
+            if not file_extension:
+                file_extension = '.xlsx'
+            
+            saved_filename = f"{clean_username}_{clean_api_name}_{timestamp}{file_extension}"
+            saved_file_path = os.path.join(upload_dir, saved_filename)
+            
+            # Save the uploaded file
+            with open(saved_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Read Excel file
+            df = pd.read_excel(uploaded_file)
+            
+            # Validate required columns
+            required_columns = ['SubjectCode', 'StudentId', 'IsDrop', 'SemesterId', 'CourseCode']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.info(f"Required columns: {', '.join(required_columns)}")
+            else:
+                # Show preview of data
+                st.success(f"✅ File uploaded successfully! Found {len(df)} student allocation records.")
+                
+                with st.expander("📋 Data Preview", expanded=True):
+                    st.dataframe(df.head(10))
+                    if len(df) > 10:
+                        st.info(f"Showing first 10 rows of {len(df)} total rows")
+                
+                # Process data and fill JSON
+                student_infos = []
+                semester_id = None
+                course_codes = []  # Store course codes for dual API call
+                
+                for _, row in df.iterrows():
+                    # Convert IsDrop to boolean
+                    is_drop_value = row['IsDrop']
+                    if isinstance(is_drop_value, str):
+                        is_drop_bool = is_drop_value.lower().strip() == 'true'
+                    else:
+                        is_drop_bool = bool(is_drop_value)
+                    
+                    student_info = {
+                        "subjectCode": str(row['SubjectCode']),
+                        "studentId": str(row['StudentId']),
+                        "isDrop": is_drop_bool,
+                        "courseCode": str(row['CourseCode'])  # Include courseCode in student info
+                    }
+                    student_infos.append(student_info)
+                    
+                    # Collect course codes for the first API call
+                    course_code = str(row['CourseCode'])
+                    if course_code not in course_codes:
+                        course_codes.append(course_code)
+                    
+                    # Use the first row's SemesterId for the entire dataset
+                    if semester_id is None:
+                        semester_id = str(row['SemesterId'])
+                
+                # Create the JSON structure for DEVAllocateStudent with course codes
+                json_body = {
+                    "semesterId": semester_id,
+                    "studentInfos": student_infos,
+                    "courseCodes": course_codes  # Add course codes for dual API processing
+                }
+                
+                # Update API body
+                api['body'] = json_body
+                
+                # Update session state
+                formatted_json = json.dumps(json_body, indent=2, ensure_ascii=False)
+                body_json_key = f"original_body_json_{api_name}"
+                st.session_state[body_json_key] = formatted_json
+                st.session_state[f"json_body_allocate_{api_name}"] = formatted_json
+                
+                # Only update current user data in memory
+                _save_current_user_data()
+                
+                # Show summary
+                unique_students = len(set(info['studentId'] for info in student_infos))
+                unique_subjects = len(set(info['subjectCode'] for info in student_infos))
+                unique_courses = len(set(str(row['CourseCode']) for _, row in df.iterrows()))
+                
+                st.success(f"✅ Processed {len(student_infos)} student-subject assignments!")
+                st.info(f"📊 Summary: {unique_students} students, {unique_subjects} subjects, {unique_courses} courses")
+                st.info(f"📋 SemesterId: {semester_id}")
+                    
+        except Exception as e:
+            st.error(f"Error processing Excel file: {str(e)}")
+            st.info("Please ensure the file format is correct and contains the required columns.")
+    
+    # JSON Body section (always show, with or without Excel upload)
+    username = st.session_state.get('username', '')
+    is_qa_account = username.upper().startswith("QA")
+    json_body_expanded = not is_qa_account
+
+    with st.expander("📝 JSON Body (Dual API Format)", expanded=json_body_expanded):
+        # Show as JSON editor with better formatting
+        if 'body' not in api:
+            api['body'] = {
+                "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "studentInfos": [
+                    {
+                        "subjectCode": "string",
+                        "studentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                        "isDrop": True,
+                        "courseCode": "string"
+                    }
+                ],
+                "courseCodes": ["string"]
+            }
+            
+        # Keep track of original JSON to detect changes
+        original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+        body_json_key = f"original_body_json_{api_name}"
+        
+        if body_json_key not in st.session_state:
+            st.session_state[body_json_key] = original_json
+        
+        # Add helpful buttons for common JSON operations
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("Format JSON", key=f"format_json_allocate_{api_name}"):
+                try:
+                    # Parse and reformat the current JSON
+                    current_json = st.session_state.get(f"json_body_allocate_{api_name}", original_json)
+                    parsed = json.loads(current_json)
+                    formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                    
+                    # Update the API body and session state
+                    api['body'] = parsed
+                    st.session_state[f"json_body_allocate_{api_name}"] = formatted_json
+                    st.session_state[body_json_key] = formatted_json
+                    
+                    # Only update current user data in memory
+                    _save_current_user_data()
+                    
+                    st.success("✅ JSON formatted!")
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("❌ Cannot format invalid JSON")
+        
+        with col2:
+            st.info("💡 This JSON will trigger dual API calls when you click 'Run API'")
+
+        body_json = st.text_area(
+            "JSON Body (For dual API allocation)", 
+            value=original_json,
+            height=400,
+            key=f"json_body_allocate_{api_name}",
+            help="This JSON structure will be used to call both course and subject allocation APIs"
+        )
+
+        try:
+            # Parse and validate the JSON
+            parsed_body = json.loads(body_json)
+            api['body'] = parsed_body
+            
+            # Only update session state if JSON changed
+            if body_json != st.session_state.get(body_json_key, ""):
+                st.session_state[body_json_key] = body_json
+                # Only update current user data in memory (no file save)
+                _save_current_user_data()
+                
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON format: {str(e)}")
+            st.warning("⚠️ Changes will not be auto-saved until JSON is valid")
+            
+        # Show a preview of the parsed JSON structure if valid
+        try:
+            parsed_preview = json.loads(body_json)
+            if parsed_preview:
+                with st.expander("📋 JSON Structure Preview", expanded=False):
+                    st.json(parsed_preview)
+        except json.JSONDecodeError:
+            pass
+
+
 def _render_body_section(api_name, api, file_paths):
     """Render the request body section for POST/PUT/PATCH requests"""
     # Check if user is QA or BA account and in DEMO environment
@@ -1929,10 +3839,35 @@ def _render_body_section(api_name, api, file_paths):
     # Check if this is an AD module API (Administration)
     api_module = api.get('module', 'EX')
     is_ad_module = api_module == "AD"
+    is_ex_module = api_module == "EX"
     
     # Special handling for AD module APIs with Excel upload
     if is_ad_module and api_name and "DEVEXUpdateStudentUser" in api_name:
         _render_excel_upload_section(api_name, api, file_paths)
+    # Special handling for EX module APIs with Excel upload
+    elif is_ex_module and api_name and "DEVCreateDataV2" in api_name:
+        _render_excel_upload_section_ex(api_name, api, file_paths)
+    # Special handling for EX module Course Student APIs with Excel upload
+    elif is_ex_module and (
+        (api_name and "DEVAddStudentV2" in api_name and "Course" in api_name) or
+        ("AssessmentStudentInfo/DEVAddStudentV2" in api.get('path', '')) or
+        ("AssessmentStudentInfo/DEVAddStudentV2" in api.get('url_path', ''))
+    ):
+        _render_excel_upload_section_course_student(api_name, api, file_paths)
+    # Special handling for EX module Subject Student APIs with Excel upload
+    elif is_ex_module and (
+        (api_name and "DEVAddStudentV2" in api_name and "Subject" in api_name) or
+        ("AssessmentSubjectStudent/DEVAddStudentV2" in api.get('path', '')) or
+        ("AssessmentSubjectStudent/DEVAddStudentV2" in api.get('url_path', ''))
+    ):
+        _render_excel_upload_section_student_subject(api_name, api, file_paths)
+    # Special handling for EX module DEVAllocateStudent API (dual API call)
+    elif is_ex_module and (
+        (api_name and "DEVAllocateStudent" in api_name) or 
+        ("DEVAllocateStudent" in api.get('path', '')) or
+        ("DEVAllocateStudent" in api.get('url_path', ''))
+    ):
+        _render_excel_upload_section_allocate_student(api_name, api, file_paths)
     elif is_priority_account and is_demo_env:
         # Simplified UI for QA/BA users in DEMO environment
         with st.expander("Request Body", expanded=True):
@@ -2231,6 +4166,13 @@ def _handle_save_button(api_name, api, file_paths, is_temp):
 
 def _handle_send_button(api_name, api, file_paths):
     """Handle send request button click"""
+    
+    # Special handling for "Add Real Student to Subject & Course Info" API
+    # This API will call two other APIs in sequence instead of calling itself
+    if "DEVAllocateStudent" in api.get('path', '') or "DEVAllocateStudent" in api.get('url_path', ''):
+        _handle_dual_api_call(api_name, api, file_paths)
+        return
+    
     with st.spinner("Sending request..."):
         try:
             # Dynamically load cookies right before sending request
@@ -2263,6 +4205,190 @@ def _handle_send_button(api_name, api, file_paths):
             st.error(f"Error: {str(e)}")
 
 
+def _handle_dual_api_call(api_name, api, file_paths):
+    """Handle the special dual API call for DEVAllocateStudent"""
+    
+    with st.spinner("Executing dual API call sequence..."):
+        try:
+            # Extract data from the original API body
+            original_body = api.get('body', {})
+            semester_id = original_body.get('semesterId', '')
+            student_infos = original_body.get('studentInfos', [])
+            course_codes_from_body = original_body.get('courseCodes', [])
+            
+            if not student_infos:
+                st.error("No student information found in the request body")
+                return
+            
+            # Prepare data for the first API call (Add to Course)
+            # Group students by course code for multiple API calls if needed
+            course_student_mapping = {}
+            
+            for info in student_infos:
+                student_id = info.get('studentId')
+                course_code = info.get('courseCode', '')
+                
+                # If courseCode is not in student info, try to get from courseCodes array
+                if not course_code and course_codes_from_body:
+                    course_code = course_codes_from_body[0]  # Use first course code as fallback
+                
+                # If still no course code, use subject code as fallback
+                if not course_code:
+                    course_code = info.get('subjectCode', '')
+                
+                if course_code and student_id:
+                    if course_code not in course_student_mapping:
+                        course_student_mapping[course_code] = []
+                    course_student_mapping[course_code].append(student_id)
+            
+            if not course_student_mapping:
+                st.error("No valid course codes or student IDs found")
+                return
+            
+            # Step 1: Call "Add Real Student To Course Info" API for each course
+            st.info("Step 1: Adding students to courses...")
+            
+            course_responses = []
+            total_course_time = 0
+            
+            for course_code, student_ids in course_student_mapping.items():
+                # Remove duplicates while preserving order
+                unique_student_ids = list(dict.fromkeys(student_ids))
+                
+                st.info(f"Adding {len(unique_student_ids)} students to course: {course_code}")
+                
+                course_api_config = {
+                    "url": f"{get_current_base_url(st.session_state.current_env, 'EX')}/AssessmentStudentInfo/DEVAddStudentV2",
+                    "method": "POST",
+                    "headers": {"Content-Type": "application/json"},
+                    "body": {
+                        "semesterId": semester_id,
+                        "courseCode": course_code,
+                        "studentIds": unique_student_ids
+                    },
+                    "cookies": api.get('cookies', {}),
+                    "params": {}
+                }
+                
+                # Dynamically load cookies for the first API call
+                _load_dynamic_cookies_for_request(course_api_config)
+                
+                start_time_course = time.time()
+                response_course = make_http_request(course_api_config)
+                end_time_course = time.time()
+                
+                course_time = round((end_time_course - start_time_course) * 1000, 2)
+                total_course_time += course_time
+                
+                course_responses.append({
+                    "course_code": course_code,
+                    "student_count": len(unique_student_ids),
+                    "status_code": response_course.status_code,
+                    "time": course_time,
+                    "response": get_response_content(response_course)
+                })
+                
+                if response_course.status_code not in [200, 201, 202]:
+                    st.error(f"Step 1 failed for course {course_code} with status {response_course.status_code}: {get_response_content(response_course)}")
+                    return
+                else:
+                    st.success(f"✅ Course {course_code}: {len(unique_student_ids)} students added (Time: {course_time} ms)")
+            
+            st.success(f"✅ Step 1 completed: All students added to courses (Total Time: {total_course_time} ms)")
+            
+            # Step 2: Call "Add Real Student to Subject Info" API
+            st.info("Step 2: Adding students to subjects...")
+            
+            # Prepare student infos without courseCode for the subject API
+            subject_student_infos = []
+            for info in student_infos:
+                subject_info = {
+                    "subjectCode": info.get('subjectCode'),
+                    "studentId": info.get('studentId'),
+                    "isDrop": info.get('isDrop', False)
+                }
+                subject_student_infos.append(subject_info)
+            
+            subject_api_config = {
+                "url": f"{get_current_base_url(st.session_state.current_env, 'EX')}/AssessmentSubjectStudent/DEVAddStudentV2",
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+                "body": {
+                    "semesterId": semester_id,
+                    "studentInfos": subject_student_infos
+                },
+                "cookies": api.get('cookies', {}),
+                "params": {}
+            }
+            
+            # Show the actual URL being used for debugging
+            st.info(f"🔗 Calling Subject API: {subject_api_config['url']}")
+            
+            # Dynamically load cookies for the second API call
+            _load_dynamic_cookies_for_request(subject_api_config)
+            
+            start_time_2 = time.time()
+            response_2 = make_http_request(subject_api_config)
+            end_time_2 = time.time()
+            
+            subject_time = round((end_time_2 - start_time_2) * 1000, 2)
+            
+            if response_2.status_code not in [200, 201, 202]:
+                st.error(f"Step 2 failed with status {response_2.status_code}: {get_response_content(response_2)}")
+                return
+            
+            st.success(f"✅ Step 2 completed: Students added to subjects (Time: {subject_time} ms)")
+            
+            # Save combined response
+            total_time = total_course_time + subject_time
+            
+            combined_response = {
+                "status_code": 200,  # Success if both calls succeeded
+                "time": total_time,
+                "headers": dict(response_2.headers),  # Use the last response headers
+                "content": {
+                    "dual_api_call": True,
+                    "step_1_courses": course_responses,  # Multiple course responses
+                    "step_2_subject": {
+                        "status_code": response_2.status_code,
+                        "time": subject_time,
+                        "response": get_response_content(response_2)
+                    },
+                    "summary": {
+                        "total_courses": len(course_student_mapping),
+                        "total_students_to_courses": sum(len(students) for students in course_student_mapping.values()),
+                        "total_subject_assignments": len(subject_student_infos),
+                        "course_details": [f"Course {resp['course_code']}: {resp['student_count']} students" for resp in course_responses]
+                    }
+                }
+            }
+            
+            st.session_state.api_responses[api_name] = combined_response
+            
+            # Save to history
+            _save_to_history(api_name, api, combined_response, file_paths["API_HISTORY_FILE"])
+            
+            # Update user data
+            _save_current_user_data()
+            
+            # Display final success message
+            st.success(f"🎉 Dual API call completed successfully! Total time: {total_time} ms")
+            
+            # Show detailed summary
+            total_course_students = sum(len(students) for students in course_student_mapping.values())
+            st.info(f"📊 Summary:")
+            st.info(f"   • Added {total_course_students} student assignments across {len(course_student_mapping)} courses")
+            st.info(f"   • Processed {len(subject_student_infos)} subject assignments")
+            for resp in course_responses:
+                st.info(f"   • Course {resp['course_code']}: {resp['student_count']} students")
+            
+            # Rerun the app to update the display
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Error in dual API call: {str(e)}")
+
+
 def _load_dynamic_cookies_for_request(api):
     """Dynamically load cookies for API request based on current configuration"""
     # Check if we should use environment cookies
@@ -2286,7 +4412,7 @@ def _load_dynamic_cookies_for_request(api):
             cookies_string = admin_cookies.get(st.session_state.current_env, "")
             if cookies_string.strip():
                 api['cookies'] = cookies_string_to_dict(cookies_string)
-                print(f"[Dynamic Load] Using admin cookies for {st.session_state.current_env}: {cookies_string}")
+                # print(f"[Dynamic Load] Using admin cookies for {st.session_state.current_env}: {cookies_string}")
             else:
                 api['cookies'] = {}
                 print(f"[Dynamic Load] No admin cookies found for {st.session_state.current_env}")

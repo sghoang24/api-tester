@@ -3,7 +3,9 @@
     "url_path": "/StudentUserWrite/DEVEXUpdateStudentUser",
     "method": "POST",
     "module": "AD",
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "params": {},
     "body": {
       "students": [
@@ -15,47 +17,186 @@
       ]
     }
   },
-  "Subject Components": {
-    "url_path": "/subjectcomponent/list",
+  "Add Fake Student Info": {
+    "url_path": "/AssessmentStudentInfo/DEVCreateDataV2",
     "method": "POST",
     "module": "EX",
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "params": {},
     "body": {
-      "semesterId": "01976233-54b1-7b09-a782-dd589f0624eb",
-      "subjectId": "d53ec2f2-1420-47db-a7ee-bb671be75bb5",
-      "query": ""
+      "maxStudentSize": 40,
+      "studentSize": 20,
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "courseCode": "string",
+      "subjectCodes": [
+        "string"
+      ]
     }
   },
-  "Student Group Info": {
-    "url_path": "/studentsubjectmark/studentgroupinfo",
+  "Add Real Student": {
+    "url_path": "/AssessmentStudentInfo/DEVAddStudent",
     "method": "POST",
     "module": "EX",
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "params": {},
     "body": {
-      "semesterId": "01976233-54b1-7b09-a782-dd589f0624eb",
-      "subjectId": "65975fb9-6be5-42b8-9f89-c36057a55952",
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "courseId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "courseCode": "string",
+      "courseVersionId": "string",
+      "studentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
+  },
+  "Add Real Student To Course Info": {
+    "url_path": "/AssessmentStudentInfo/DEVAddStudentV2",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "params": {},
+    "body": {
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "courseCode": "string",
       "studentIds": [
-        "e87c7cfb-c081-45d3-b0e9-24e4cc51a975",
-        "2426cfc9-5bed-4c29-b9a4-dc96cfe0ff91"
+        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
       ]
     }
   },
-  "Fake Student Flow": {
-    "url_path": "/assessmentstudentinfo/devcreate",
+  "Add Real Student to Subject Info": {
+    "url_path": "/AssessmentSubjectStudent/DEVAddStudentV2",
     "method": "POST",
     "module": "EX",
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "params": {},
     "body": {
-      "semesterId": "01971a27-e9f3-77a0-bf54-484f9a4bd1d8",
-      "courseCode": "2605 snow ",
-      "subjectIds": [
-        "968cab22-3dd1-469e-8456-34496b07820a",
-        "235e667a-fab9-4da6-93cb-824f3bea9489",
-        "0c55727a-ab4d-44e8-8e53-86da9a4c520f"
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "studentInfos": [
+        {
+          "subjectCode": "string",
+          "studentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "isDrop": true
+        }
       ]
+    }
+  },
+  "Add Real Student to Subject & Course Info": {
+    "url_path": "/AssessmentSubjectStudent/DEVAllocateStudent",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "params": {},
+    "body": {
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "studentInfos": [
+        {
+          "subjectCode": "string",
+          "studentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "isDrop": true
+        }
+      ]
+    }
+  },
+  "Clear Subject Student": {
+    "path": "/AssessmentSubjectStudent/DEVClearData",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "assessmentSubjectStudent": [
+        {
+          "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "subjectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    }
+  },
+  "Clear Course Student": {
+    "path": "/AssessmentStudentInfo/DEVClearData",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "assessmentStudentInfoDtos": [
+        {
+          "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "courseId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    }
+  },
+  "Update CutOff": {
+    "path": "/CutOffTimeSetting/DEVUpdateCutOffDateTimeSetting",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "cutOffSettings": [
+        {
+          "activity": 1,
+          "startDate": "2025-11-06T04:40:27.265Z",
+          "endDate": "2025-11-06T04:40:27.265Z",
+          "days": 0
+        }
+      ]
+    }
+  },
+  "Update CutOff Extend": {
+    "path": "/CutOffTimeSetting/DEVUpdateCutOffDateTimeExtendSetting",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "cutOffTimeSettingId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "businessDtos": [
+        {
+          "businessId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "cutOffDateTime": "2025-11-06T04:40:27.268Z"
+        }
+      ]
+    }
+  },
+  "Random Academic Standing": {
+    "url_path": "/processingresult/devrandomacadstanding",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "params": {},
+    "body": {
+      "courses": [
+        {
+          "courseId": "019807eb-a6eb-742e-84bc-3ccba33ec1c6",
+          "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
+        },
+        {
+          "courseId": "0197e904-3ed3-746c-9966-297d50a0b7fd",
+          "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
+        }
+      ],
+      "studentIds": [
+        "0197e904-3ed3-746c-9966-297d50a0b7fd"
+      ],
+      "numberOfRandom": 10,
+      "topX": 20
     }
   },
   "Generate Mark": {
@@ -70,72 +211,6 @@
     },
     "body": {}
   },
-  "Sync Weightage": {
-    "url_path": "/subjectcomponent/syncweightage",
-    "method": "GET",
-    "module": "EX",
-    "headers": {},
-    "params": {},
-    "body": {}
-  },
-  "Clean Student Distinction": {
-    "url_path": "/subjectawarddistinction/devcleandatastudentdistinction",
-    "method": "POST",
-    "module": "EX",
-    "headers": { "Content-Type": "application/json" },
-    "params": {},
-    "body": {
-      "semesterId": "01974399-0551-7971-8b9d-ff703fcc49a0",
-      "subjectIds": [
-        "0197b035-fb12-75cf-8aba-b00a6d06d231",
-        "0197b035-2759-7b9a-bd3d-1ae649981719"
-      ]
-    }
-  },
-  "Incomplete ME Reminding": {
-    "url_path": "/studentcomponentmark/devincompletereminding",
-    "method": "POST",
-    "module": "EX",
-    "headers": { "Content-Type": "application/json" },
-    "params": {},
-    "body": {
-      "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e",
-      "subjectId": "01983507-72f8-7cd6-a4c1-199f2b891506",
-      "currentDate": "2025-07-23T05:00:00.000Z"
-    }
-  },
-  "Course Award DWM": {
-    "url_path": "/courseawarddiplomamerit/devcreate",
-    "method": "GET",
-    "module": "EX",
-    "headers": {},
-    "params": {
-      "semesterId": "01971a27-e9f3-77a0-bf54-484f9a4bd1d8"
-    },
-    "body": {}
-  },
-  "Random Academic Standing": {
-    "url_path": "/processingresult/devrandomacadstanding",
-    "method": "POST",
-    "module": "EX",
-    "headers": { "Content-Type": "application/json" },
-    "params": {},
-    "body": {
-      "courses": [
-        {
-          "courseId": "019807eb-a6eb-742e-84bc-3ccba33ec1c6",
-          "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
-        },
-        {
-          "courseId": "0197e904-3ed3-746c-9966-297d50a0b7fd",
-          "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
-        }
-      ],
-      "studentIds": ["0197e904-3ed3-746c-9966-297d50a0b7fd"],
-      "numberOfRandom": 10,
-      "topX": 20
-    }
-  },
   "Sync Percentage": {
     "url_path": "/subjectawarddistinction/syncpercentage",
     "method": "GET",
@@ -143,25 +218,5 @@
     "headers": {},
     "params": {},
     "body": {}
-  },
-  "User Management": {
-    "url_path": "/users/list",
-    "method": "GET",
-    "module": "AD",
-    "headers": {},
-    "params": {},
-    "body": {}
-  },
-  "Create User": {
-    "url_path": "/users/create",
-    "method": "POST",
-    "module": "AD",
-    "headers": { "Content-Type": "application/json" },
-    "params": {},
-    "body": {
-      "username": "newuser",
-      "email": "user@example.com",
-      "role": "student"
-    }
   }
 }

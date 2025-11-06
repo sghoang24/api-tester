@@ -1,0 +1,53 @@
+[
+  {
+    "timestamp": "2025-11-04 13:04:44",
+    "name": "Enroll Real Student To Subject",
+    "environment": "SIT",
+    "path": "/AssessmentSubjectStudent/DEVAddStudentV2",
+    "method": "POST",
+    "status_code": 200,
+    "time_ms": 1200.91,
+    "config": {
+      "url_path": "/AssessmentSubjectStudent/DEVAddStudentV2",
+      "method": "POST",
+      "module": "EX",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cookie": "_ga=GA1.1.379208491.1753342019; _ga_6F011EZW22=GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0; _ga_QR3VBWEVB5=GS2.1.s1757515472$o4$g0$t1757515472$j60$l0$h0; sessionid=20251103130023933__51b401e1-c3d8-4b1b-8959-667853aebe41; Cookies=e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQY1SW7qAc09HKF29JLbpCUBlNPDLNIxztqYeXGlrPk5icgadUhEw4sPRFx33p3vcWBArcAq9EBm7jBf9s2M_EJb4726qwb9-hMxgcl3Gq6V9NVq_XuPAiAk1JicJYh74Pdvur9fe9b3W9qvQQlg1W9Wyht_3OITfQ4I4OKNuHLctMD_1jbPkzE6YFrPpv6fLjuxICTkAwiHtR4pw__1NbOwUU0rdO_L2MsI_ViPB8E-aL5r3o1I6tfDqXcD2HQU6r9hLALZtb2rnCztIZvSAdM6uABOKBpUlbSI2mfXPFWQi8fg2Ildr_RKp9wY4VsaCzHs-kQV7iOVbcf0zYiI1jyeXw_T2jxr1HAuh_XidW3H5Cf9hiNe8gpMlUf898UEVOtovsUK6auGWtJfMBbm_dq1PFFFg_72ktlTquTOuQPHYsR5s3Z3qSRIEvaQmLuLnBJxxZ-M-lpiQ6sUKPcEAy-s_uT7LSN5pbEvo_Q2xKamwShf8Cn7SEtxELprqpfEpIFKKoq9oYPHmkIPwU-2B7vuqT86nK9dLo-SvN0eSyTJOn_TSCOVos24qoa4CjEsGpd0YSBDC2REvmc_uBsvUssQgXrPKv0xaC8NGK4LQFv3PehCObeIq8QBcAWVFCLSyBh9ENyOwa382wi6yb6G0_hcMX-9U4f72-0l25oWPrKsJaSmOWxkFJjN0ebGM7uSYFLPU8HDn7JqVQyO-aHGp0-NLYPcedDHk_v9QbfCZqJJtccouypYYRjVthXN8XtsNKkXS7dQiP1eb9oedLQLJfC93J7vutJYtv9vs4ZqoOpZM6JJIpmRsgfvFdPJ4gZpJAGR_H2IWqeR_4HQUd81Z1GXuGocsyK_nycRwtUcVVakZAgTCrDgrh465IM1CTslc_UozEKauVnmWzEun0E4eSSEevsd2wd0KprQLwvI3Ueo7Y6CHwmGQZVJ7cGG0S84tdq_uoLaX48JLTRtdhTXCQ42iaazOhMIymmBnLGg5D5h0qxOVH4rt8Suotwdy-BTHbY3nEtb1tEnnIuJ9gcFd6mVOiZD2QMoY3bv_nRV4V8Bfad21LDhJWe46saJjAUP3N2spGSlSDhCitIyY3mT4XRUA0acjcQ7Z6jeQTg_KXna9kMYxhqBQUdE_jHWAjhz_UImXM1gG8r3bKjLcXIrQpAOg1F4d6XcvIul4b0ghr8Jl5GLifRlnF8VZj41z53n6kdMLs5hZp34QYRqTx2DfBZbo1kC_LSwCA6xNP38O1F6TNmy5bpExgRTUtq4Rr04x3b0hNNMZb_rEglUokRK0rG9ZL39FuUHkdpNFtYpszhuzIL0gWXYjrMze_1MhkpT-Q6g2trlepmCsjnOnFcEMYrbj64mq6r-mvIsr_JsCq7X9AwocYk9wfzWeoVKrwzLWWg7THaLaQEhJy4x_Ka_L023NTKk6MDKGR0oC6Ji8yrDfeRC6p3SJlV6y0OIKFuThLa2EG4VDYbmKkWHozcVDZa-tHyzqCF4pXsHZga16kLraEkikmueK_2eNJw0KWQ-nqKZd8mnjd8PWhB8YKa0nH1sT6uFrJTAzY-EeO8eXOWPEo4FzONUW8U_rVjJ8iwr__e4Y4RKZ-egxnZSkR-63k_ypQiOp4ZXWsYqE84HLNCSyG9EtTnFvkwDX9R77sR9g4b3dAJ6G-6PXFWDvG5CepDWOolDKNuJZutgjObf5uxuos98FC7Nj5rfJxjT19EgZYGsPP_ujpJwyFearzwWwk2blG0ImHjamxUKFGtOwJU7nqH8Jkgdjoc1Rrj0Z4PDnCroY6GwBEYxF9dMcIntIZJUGP4achM5QDLgTCaq8QdWkWq8S2VWN72UsUWokPXbye2TiE1Pt5Mjm9qEImlcMCz1mkad5coLq2OQscTFB58SOJdFmeuVAmND-JgCs80jWxECs43qtWwoL-befoKtujYM61pzBE93y7mMxCzk7nr9A; _ga_Y7K6FLL3VV=GS2.1.s1762236036$o86$g1$t1762236061$j35$l0$h0"
+      },
+      "params": {},
+      "body": {
+        "semesterId": "01987861-2050-7d44-bf2a-5e54e962121b",
+        "studentInfos": [
+          {
+            "subjectCode": "CGDipC2",
+            "studentId": "b7866c6d-ea2f-4457-b0b0-f3595ea0a9f2",
+            "isDrop": false
+          },
+          {
+            "subjectCode": "CGDipE2",
+            "studentId": "b7866c6d-ea2f-4457-b0b0-f3595ea0a9f2",
+            "isDrop": false
+          },
+          {
+            "subjectCode": "CGDipO2",
+            "studentId": "b7866c6d-ea2f-4457-b0b0-f3595ea0a9f2",
+            "isDrop": false
+          }
+        ]
+      },
+      "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/AssessmentSubjectStudent/DEVAddStudentV2",
+      "path": "/AssessmentSubjectStudent/DEVAddStudentV2",
+      "is_temporary": true,
+      "original_name": "Add Real Student Info V2",
+      "cookies": {
+        "_ga": "GA1.1.379208491.1753342019",
+        "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
+        "_ga_QR3VBWEVB5": "GS2.1.s1757515472$o4$g0$t1757515472$j60$l0$h0",
+        "sessionid": "20251103130023933__51b401e1-c3d8-4b1b-8959-667853aebe41",
+        "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQY1SW7qAc09HKF29JLbpCUBlNPDLNIxztqYeXGlrPk5icgadUhEw4sPRFx33p3vcWBArcAq9EBm7jBf9s2M_EJb4726qwb9-hMxgcl3Gq6V9NVq_XuPAiAk1JicJYh74Pdvur9fe9b3W9qvQQlg1W9Wyht_3OITfQ4I4OKNuHLctMD_1jbPkzE6YFrPpv6fLjuxICTkAwiHtR4pw__1NbOwUU0rdO_L2MsI_ViPB8E-aL5r3o1I6tfDqXcD2HQU6r9hLALZtb2rnCztIZvSAdM6uABOKBpUlbSI2mfXPFWQi8fg2Ildr_RKp9wY4VsaCzHs-kQV7iOVbcf0zYiI1jyeXw_T2jxr1HAuh_XidW3H5Cf9hiNe8gpMlUf898UEVOtovsUK6auGWtJfMBbm_dq1PFFFg_72ktlTquTOuQPHYsR5s3Z3qSRIEvaQmLuLnBJxxZ-M-lpiQ6sUKPcEAy-s_uT7LSN5pbEvo_Q2xKamwShf8Cn7SEtxELprqpfEpIFKKoq9oYPHmkIPwU-2B7vuqT86nK9dLo-SvN0eSyTJOn_TSCOVos24qoa4CjEsGpd0YSBDC2REvmc_uBsvUssQgXrPKv0xaC8NGK4LQFv3PehCObeIq8QBcAWVFCLSyBh9ENyOwa382wi6yb6G0_hcMX-9U4f72-0l25oWPrKsJaSmOWxkFJjN0ebGM7uSYFLPU8HDn7JqVQyO-aHGp0-NLYPcedDHk_v9QbfCZqJJtccouypYYRjVthXN8XtsNKkXS7dQiP1eb9oedLQLJfC93J7vutJYtv9vs4ZqoOpZM6JJIpmRsgfvFdPJ4gZpJAGR_H2IWqeR_4HQUd81Z1GXuGocsyK_nycRwtUcVVakZAgTCrDgrh465IM1CTslc_UozEKauVnmWzEun0E4eSSEevsd2wd0KprQLwvI3Ueo7Y6CHwmGQZVJ7cGG0S84tdq_uoLaX48JLTRtdhTXCQ42iaazOhMIymmBnLGg5D5h0qxOVH4rt8Suotwdy-BTHbY3nEtb1tEnnIuJ9gcFd6mVOiZD2QMoY3bv_nRV4V8Bfad21LDhJWe46saJjAUP3N2spGSlSDhCitIyY3mT4XRUA0acjcQ7Z6jeQTg_KXna9kMYxhqBQUdE_jHWAjhz_UImXM1gG8r3bKjLcXIrQpAOg1F4d6XcvIul4b0ghr8Jl5GLifRlnF8VZj41z53n6kdMLs5hZp34QYRqTx2DfBZbo1kC_LSwCA6xNP38O1F6TNmy5bpExgRTUtq4Rr04x3b0hNNMZb_rEglUokRK0rG9ZL39FuUHkdpNFtYpszhuzIL0gWXYjrMze_1MhkpT-Q6g2trlepmCsjnOnFcEMYrbj64mq6r-mvIsr_JsCq7X9AwocYk9wfzWeoVKrwzLWWg7THaLaQEhJy4x_Ka_L023NTKk6MDKGR0oC6Ji8yrDfeRC6p3SJlV6y0OIKFuThLa2EG4VDYbmKkWHozcVDZa-tHyzqCF4pXsHZga16kLraEkikmueK_2eNJw0KWQ-nqKZd8mnjd8PWhB8YKa0nH1sT6uFrJTAzY-EeO8eXOWPEo4FzONUW8U_rVjJ8iwr__e4Y4RKZ-egxnZSkR-63k_ypQiOp4ZXWsYqE84HLNCSyG9EtTnFvkwDX9R77sR9g4b3dAJ6G-6PXFWDvG5CepDWOolDKNuJZutgjObf5uxuos98FC7Nj5rfJxjT19EgZYGsPP_ujpJwyFearzwWwk2blG0ImHjamxUKFGtOwJU7nqH8Jkgdjoc1Rrj0Z4PDnCroY6GwBEYxF9dMcIntIZJUGP4achM5QDLgTCaq8QdWkWq8S2VWN72UsUWokPXbye2TiE1Pt5Mjm9qEImlcMCz1mkad5coLq2OQscTFB58SOJdFmeuVAmND-JgCs80jWxECs43qtWwoL-befoKtujYM61pzBE93y7mMxCzk7nr9A",
+        "_ga_Y7K6FLL3VV": "GS2.1.s1762236036$o86$g1$t1762236061$j35$l0$h0"
+      }
+    }
+  }
+]
