@@ -6,7 +6,6 @@ import time
 import os
 import datetime
 from utils import (
-    get_base_url, 
     get_current_base_url, 
     get_user_specific_paths,
     cookies_dict_to_string,
