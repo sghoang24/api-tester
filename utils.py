@@ -5,20 +5,9 @@ import os
 import requests
 import time
 from typing import Dict, List, Any, Optional
-from constants import DAI_BASE_URL, SIT_BASE_URL, UAT_BASE_URL, DAI_COOKIES, SIT_COOKIES, UAT_COOKIES
 
 
-def get_base_url(env: str) -> str:
-    """Get base URL."""
-    env = env.upper()
-    if env == 'DAI':
-        return DAI_BASE_URL
-    elif env == 'SIT':
-        return SIT_BASE_URL
-    elif env == 'UAT':
-        return UAT_BASE_URL
-    else:
-        raise ValueError(f"Invalid environment '{env}'. Please use 'DAI', 'SIT', or 'UAT'.")
+# Legacy get_base_url function removed - now using get_current_base_url with JSON config
 
 
 def get_current_base_url(current_env: str, module: str = "EX") -> str:
@@ -41,19 +30,14 @@ def get_current_base_url(current_env: str, module: str = "EX") -> str:
         
         return base_url
 
-    # Fallback to constants for backward compatibility with module support
-    if current_env == "DAI":
-        base_url = DAI_BASE_URL
-    elif current_env == "SIT":
-        base_url = SIT_BASE_URL
-    else:  # UAT
-        base_url = UAT_BASE_URL
+    # Fallback: get from environments config (this will load from JSON or use hardcoded fallback)
+    environments = load_environments_config()
     
-    # Remove existing module suffixes and add new one
-    if base_url.endswith("/api/assessment/api/v1"):
-        base_url = base_url.replace("/api/assessment/api/v1", "")
-    elif base_url.endswith("/api/administration/api/v1"):
-        base_url = base_url.replace("/api/administration/api/v1", "")
+    if current_env in environments:
+        base_url = environments[current_env]["base_url"]
+    else:
+        # Last resort fallback - use SIT
+        base_url = environments.get("SIT", {}).get("base_url", "https://admin-tp-esms-sit.dev.edutechonline.org")
     
     # Add module-specific suffix
     if module == "EX":
@@ -65,56 +49,52 @@ def get_current_base_url(current_env: str, module: str = "EX") -> str:
 
 
 def load_environments_config() -> Dict[str, Any]:
-    """Load environments configuration, combining defaults with admin-added environments"""
+    """Load environments configuration from JSON file"""
     try:
-        # Start with defaults
-        result = {
-            "SIT": {
-                "name": "SIT",
-                "base_url": SIT_BASE_URL,
-                "default_cookies": SIT_COOKIES,
-                "enabled": True
-            },
-            "DAI": {
-                "name": "DAI", 
-                "base_url": DAI_BASE_URL,
-                "default_cookies": DAI_COOKIES,
-                "enabled": True
-            },
-            "UAT": {
-                "name": "UAT",
-                "base_url": UAT_BASE_URL,
-                "default_cookies": UAT_COOKIES,
-                "enabled": True
-            }
-        }
-
-        # Add admin environments if file exists
         env_file_path = os.path.join(os.path.dirname(__file__), "environments_config.json")
         if os.path.exists(env_file_path):
-            admin_envs = load_json_file(env_file_path)
-            result.update(admin_envs)
-        
-        return result
+            return load_json_file(env_file_path)
+        else:
+            # Return minimal fallback if file doesn't exist
+            return {
+                "SIT": {
+                    "name": "SIT",
+                    "base_url": "https://admin-tp-esms-sit.dev.edutechonline.org",
+                    "default_cookies": "",
+                    "enabled": True
+                },
+                "DAI": {
+                    "name": "DAI", 
+                    "base_url": "https://admin-tp-esms-daily.dev.edutechonline.org",
+                    "default_cookies": "",
+                    "enabled": True
+                },
+                "UAT": {
+                    "name": "UAT",
+                    "base_url": "https://admin-tp-esms-uat.dev.edutechonline.org",
+                    "default_cookies": "",
+                    "enabled": True
+                }
+            }
     except Exception:
-        # Return defaults if anything fails
+        # Return minimal fallback if anything fails
         return {
             "SIT": {
                 "name": "SIT",
-                "base_url": SIT_BASE_URL,
-                "default_cookies": SIT_COOKIES,
+                "base_url": "https://admin-tp-esms-sit.dev.edutechonline.org",
+                "default_cookies": "",
                 "enabled": True
             },
             "DAI": {
                 "name": "DAI", 
-                "base_url": DAI_BASE_URL,
-                "default_cookies": DAI_COOKIES,
+                "base_url": "https://admin-tp-esms-daily.dev.edutechonline.org",
+                "default_cookies": "",
                 "enabled": True
             },
             "UAT": {
                 "name": "UAT",
-                "base_url": UAT_BASE_URL,
-                "default_cookies": UAT_COOKIES,
+                "base_url": "https://admin-tp-esms-uat.dev.edutechonline.org",
+                "default_cookies": "",
                 "enabled": True
             }
         }
