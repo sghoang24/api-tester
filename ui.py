@@ -4316,7 +4316,7 @@ def _handle_dual_api_call(api_name, api, file_paths):
                     "semesterId": semester_id,
                     "studentInfos": subject_student_infos
                 },
-                "cookies": api.get('cookies', {}),
+                "cookies": {},  # Start with empty cookies, will be loaded dynamically
                 "params": {}
             }
             
@@ -4324,7 +4324,15 @@ def _handle_dual_api_call(api_name, api, file_paths):
             st.info(f"🔗 Calling Subject API: {subject_api_config['url']}")
             
             # Dynamically load cookies for the second API call
+            print(f"[DEBUG] Loading cookies for Step 2 (Subject API)...")
             _load_dynamic_cookies_for_request(subject_api_config)
+            
+            # Verify cookies were loaded
+            if subject_api_config.get('cookies'):
+                print(f"[DEBUG] Step 2 cookies loaded successfully: {len(subject_api_config['cookies'])} cookies")
+            else:
+                print("[DEBUG] WARNING: Step 2 has no cookies!")
+                st.warning("⚠️ No cookies loaded for Step 2 - this may cause authentication issues")
             
             start_time_2 = time.time()
             response_2 = make_http_request(subject_api_config)
@@ -4392,10 +4400,16 @@ def _load_dynamic_cookies_for_request(api):
     """Dynamically load cookies for API request based on current configuration"""
     # Check if we should use environment cookies
     cookie_choice = st.session_state.get('cookie_choice', 'Use Environment Cookies')
+    current_env = st.session_state.get('current_env', 'DEV')
+    
+    print(f"[DEBUG] Loading cookies for {current_env} with choice: {cookie_choice}")
     
     if cookie_choice == "Use Environment Cookies":
-        # Get user's cookies for current environment
-        user_cookies_string = st.session_state.cookies_config.get(st.session_state.current_env, "")
+        # Always reload cookies config fresh from session state
+        user_cookies_config = getattr(st.session_state, 'cookies_config', {})
+        user_cookies_string = user_cookies_config.get(current_env, "")
+        
+        print(f"[DEBUG] User cookies for {current_env}: '{user_cookies_string[:50]}...'" if user_cookies_string else f"[DEBUG] No user cookies for {current_env}")
         
         # If user cookies are empty, dynamically load admin cookies
         if not user_cookies_string.strip():
@@ -4404,30 +4418,57 @@ def _load_dynamic_cookies_for_request(api):
             if os.path.exists(ADMIN_COOKIES_FILE):
                 try:
                     admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
-                except:
+                    print(f"[DEBUG] Loaded admin cookies from file for envs: {list(admin_cookies.keys())}")
+                except Exception as e:
+                    print(f"[DEBUG] Failed to load admin cookies: {str(e)}")
                     admin_cookies = {}
             
             # Use admin cookies for current environment
-            cookies_string = admin_cookies.get(st.session_state.current_env, "")
+            cookies_string = admin_cookies.get(current_env, "")
+            print(f"[DEBUG] Admin cookies for {current_env}: '{cookies_string[:50]}...'" if cookies_string else f"[DEBUG] No admin cookies for {current_env}")
+            
             if cookies_string.strip():
-                api['cookies'] = cookies_string_to_dict(cookies_string)
-                # print(f"[Dynamic Load] Using admin cookies for {st.session_state.current_env}: {cookies_string}")
+                # Convert cookies string to dictionary format for requests library
+                cookies_dict = cookies_string_to_dict(cookies_string)
+                api['cookies'] = cookies_dict
+                print(f"[DEBUG] Using admin cookies for {current_env}: {len(cookies_dict)} cookies loaded")
+                if cookies_dict:
+                    sample_keys = list(cookies_dict.keys())[:3]
+                    print(f"[DEBUG] Sample admin cookies keys: {sample_keys}")
             else:
                 api['cookies'] = {}
-                print(f"[Dynamic Load] No admin cookies found for {st.session_state.current_env}")
+                print(f"[DEBUG] No admin cookies found for {current_env}")
         else:
             # Use user's custom cookies
-            api['cookies'] = cookies_string_to_dict(user_cookies_string)
-            print(f"[Dynamic Load] Using user cookies for {st.session_state.current_env}: {user_cookies_string}")
+            cookies_dict = cookies_string_to_dict(user_cookies_string)
+            api['cookies'] = cookies_dict
+            print(f"[DEBUG] Using user cookies for {current_env}: {len(cookies_dict)} cookies loaded")
+            if cookies_dict:
+                sample_keys = list(cookies_dict.keys())[:3]
+                print(f"[DEBUG] Sample user cookies keys: {sample_keys}")
     elif cookie_choice == "Custom Cookies":
         # Use custom cookies from the API config
         custom_cookies_string = api.get('custom_cookies_string', '')
-        api['cookies'] = cookies_string_to_dict(custom_cookies_string)
-        print(f"[Dynamic Load] Using custom cookies: {custom_cookies_string}")
+        cookies_dict = cookies_string_to_dict(custom_cookies_string)
+        api['cookies'] = cookies_dict
+        print(f"[DEBUG] Using custom cookies: {len(cookies_dict)} cookies loaded")
     else:
         # No cookies
         api['cookies'] = {}
-        print("[Dynamic Load] No cookies configured")
+        print("[DEBUG] No cookies configured")
+    
+    # Final verification
+    final_cookies = api.get('cookies', {})
+    if final_cookies:
+        print(f"[DEBUG] ✅ Final cookies set in API config: {len(final_cookies)} cookies")
+        # Show a sample cookie name for verification (not value for security)
+        if final_cookies:
+            first_cookie_name = list(final_cookies.keys())[0]
+            print(f"[DEBUG] First cookie name: {first_cookie_name}")
+    else:
+        print("[DEBUG] ❌ WARNING: No cookies set in API config!")
+        
+    return api.get('cookies', {})
 
 
 def _handle_delete_button(api_name, file_paths):
