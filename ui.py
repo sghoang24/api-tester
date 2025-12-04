@@ -50,11 +50,225 @@ def load_help_content():
         return f"Error reading help file: {str(e)}"
 
 
+def load_admin_content():
+    """Load admin-editable content from markdown file"""
+    try:
+        admin_content_file = os.path.join(os.path.dirname(__file__), "ADMIN_CONTENT.md")
+        if os.path.exists(admin_content_file):
+            with open(admin_content_file, 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            # Default content if file doesn't exist
+            return "# Admin Editable Content\n\nThis content can be edited by administrators.\n\n## Welcome\n\nWelcome to the API Client Tester!\n\n## Getting Started\n\nPlease contact your administrator for more information."
+    except Exception as e:
+        return f"Error reading admin content file: {str(e)}"
+
+
+def save_admin_content(content):
+    """Save admin-editable content to markdown file"""
+    try:
+        admin_content_file = os.path.join(os.path.dirname(__file__), "ADMIN_CONTENT.md")
+        with open(admin_content_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        st.error(f"Error saving admin content: {str(e)}")
+        return False
+
+
+def _update_admin_content_with_timer_jobs():
+    """Auto-update ADMIN_CONTENT.md with timer job URLs (SIT only)"""
+    try:
+        # Get current timer job entries
+        timer_entries = st.session_state.get('timer_job_entries', [])
+        
+        if not timer_entries:
+            # If no timer entries, just ensure ADMIN_CONTENT.md exists with basic content
+            current_content = load_admin_content()
+            if "No timer job entries" not in current_content:
+                # Remove any existing timer job sections and add empty notice
+                lines = current_content.split('\n')
+                filtered_lines = []
+                skip_section = False
+                
+                for line in lines:
+                    if line.startswith('## ') and ('Timer' in line or 'timer' in line):
+                        skip_section = True
+                        continue
+                    elif line.startswith('## ') and skip_section:
+                        skip_section = False
+                        filtered_lines.append(line)
+                    elif not skip_section and not line.startswith('```'):
+                        filtered_lines.append(line)
+                    elif not skip_section and line.startswith('```') and len(filtered_lines) > 0 and not filtered_lines[-1].startswith('```'):
+                        # Skip code blocks that were part of timer sections
+                        continue
+                    elif not skip_section:
+                        filtered_lines.append(line)
+                
+                # Clean up and add basic content if needed
+                clean_content = '\n'.join(filtered_lines).strip()
+                if not clean_content:
+                    clean_content = "# Admin Content\n\nWelcome to the API Tester system.\n\n*No timer job entries configured yet.*"
+                
+                save_admin_content(clean_content)
+            return True
+        
+        # Check if SIT environment exists
+        enabled_envs = get_enabled_environments()
+        if "SIT" not in enabled_envs:
+            return False
+        
+        # Load current admin content
+        current_content = load_admin_content()
+        
+        # Remove existing timer job sections
+        lines = current_content.split('\n')
+        filtered_lines = []
+        skip_section = False
+        
+        for line in lines:
+            if line.startswith('## ') and ('Timer' in line or 'timer' in line):
+                skip_section = True
+                continue
+            elif line.startswith('## ') and skip_section:
+                skip_section = False
+                filtered_lines.append(line)
+            elif not skip_section and not line.startswith('```'):
+                filtered_lines.append(line)
+            elif not skip_section and line.startswith('```') and len(filtered_lines) > 0 and not filtered_lines[-1].startswith('```'):
+                # Skip code blocks that were part of timer sections
+                continue
+            elif not skip_section:
+                filtered_lines.append(line)
+        
+        # Build new content with timer jobs
+        base_content = '\n'.join(filtered_lines).strip()
+        
+        # Add timer job sections
+        timer_content = ""
+        for entry in timer_entries:
+            # Get SIT URL
+            base_url = get_current_base_url("SIT", entry['module'])
+            final_path = entry['path'].replace('{timer_job_id}', entry['id'])
+            full_url = f"{base_url}{final_path}"
+            
+            # Add timer job section with the specified format
+            timer_content += f"\n\n## {entry['name']}:\n```\n{full_url}\n```"
+        
+        # Combine content
+        if base_content:
+            new_content = base_content + timer_content
+        else:
+            new_content = "# Timer Job APIs" + timer_content
+        
+        # Save updated content
+        return save_admin_content(new_content)
+        
+    except Exception as e:
+        print(f"Error updating admin content with timer jobs: {str(e)}")
+        return False
+
+
+def generate_timer_job_markdown():
+    """Generate markdown content for Timer Job APIs from ADMIN_CONTENT.md"""
+    try:
+        # Load admin content which contains timer job URLs
+        admin_content = load_admin_content()
+        
+        # Check if there are timer job entries in the content
+        if "##" in admin_content and ("Timer" in admin_content or "timer" in admin_content or "```" in admin_content):
+            # Return the admin content directly as it already contains formatted timer jobs
+            return admin_content
+        else:
+            # No timer jobs found in admin content
+            markdown_content = "# Timer Job APIs\n\n"
+            markdown_content += "❌ **No Timer Job APIs configured yet.**\n\n"
+            markdown_content += "💡 **Tip:** Admin users can add Timer Job APIs in the Admin Panel → Timer Run tab.\n\n"
+            markdown_content += "📝 **Note:** Timer Job URLs are automatically generated for SIT environment only.\n"
+            return markdown_content
+        
+    except Exception as e:
+        return f"# Timer Job APIs\n\n❌ **Error loading Timer Job information:** {str(e)}\n"
+
+
 @st.dialog("📖 Help", width="large")
 def show_help_dialog():
     """Show help dialog with markdown content"""
     help_content = load_help_content()
     st.markdown(help_content)
+
+
+@st.dialog("📝 Admin Content", width="large")
+def show_admin_content_dialog():
+    """Show admin content dialog with view/edit functionality"""
+    # Check if user is admin (for editing)
+    is_admin = st.session_state.get("is_admin", False)
+    
+    # Load current content
+    admin_content = load_admin_content()
+    
+    if is_admin:
+        # Admin can edit content
+        st.subheader("🔧 Admin Mode - Edit Content")
+        st.info("You can edit the content below. Changes will be saved immediately when you click Save.")
+        
+        # Text area for editing
+        edited_content = st.text_area(
+            "Edit Content (Markdown Format)",
+            value=admin_content,
+            height=400,
+            help="Use Markdown syntax for formatting. Changes will be visible to all users."
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 Save Changes", type="primary"):
+                if save_admin_content(edited_content):
+                    st.success("Content saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to save content")
+        
+        with col2:
+            if st.button("🔄 Reset to Default"):
+                default_content = "# Admin Editable Content\n\nThis content can be edited by administrators.\n\n## Welcome\n\nWelcome to the API Client Tester!\n\n## Getting Started\n\nPlease contact your administrator for more information."
+                if save_admin_content(default_content):
+                    st.success("Content reset to default!")
+                    st.rerun()
+        
+        st.markdown("---")
+        st.subheader("📄 Preview")
+        st.markdown(edited_content)
+        
+    else:
+        # Regular users can only view content
+        st.markdown(admin_content)
+
+
+@st.dialog("⏰ Timer Job APIs", width="large")
+def show_timer_job_dialog():
+    """Show Timer Job APIs information in markdown format"""
+    # Generate Timer Job markdown content
+    timer_markdown = generate_timer_job_markdown()
+    
+    # Display the content
+    st.markdown(timer_markdown)
+    
+    # Add refresh button for admins
+    if st.session_state.get("is_admin", False):
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Refresh Timer Job Info"):
+                st.rerun()
+        
+        with col2:
+            if st.button("⚙️ Manage in Admin Panel"):
+                st.session_state.admin_mode = True
+                st.session_state.admin_tab_focus = "timer_run"
+                st.rerun()
 
 
 def save_to_predefined(api_name, api, file_paths):
@@ -83,9 +297,16 @@ def save_to_predefined(api_name, api, file_paths):
 
 def show_multi_user_login():
     """Display the multi-user login page"""
-    # Help button above title
-    if st.button("📖 Instruction", key="login_help", help="Take a look about instruction"):
-        show_help_dialog()
+    # Help and content management buttons above title
+    col1, col2, col3 = st.columns([1, 1, 15])
+    
+    with col1:
+        if st.button("📖 Instruction", key="login_help", help="Take a look about instruction"):
+            show_help_dialog()
+    
+    with col2:
+        if st.button("⏰ Timer Run", key="login_content", help="View Timer Job APIs information"):
+            show_timer_job_dialog()
     
     # Title
     st.title("API Client Tester")
@@ -419,7 +640,17 @@ def show_admin_panel():
     environments = load_environments_config()
     
     # Create tabs for different admin functions
-    env_tab, cookie_tab, api_tab, file_tab = st.tabs(["🌐 Environment Management", "🍪 Cookie Configuration", "🔧 API Configuration", "📁 File Management"])
+    tab_names = ["🌐 Environment Management", "🍪 Cookie Configuration", "🔧 API Configuration", "📝 Content Management", "⏰ Timer Run", "📁 File Management"]
+    
+    # Determine default tab index based on focus
+    default_tab = 0
+    if st.session_state.get("admin_tab_focus") == "timer_run":
+        default_tab = 4  # Timer Run tab index
+        # Clear the focus after setting
+        if "admin_tab_focus" in st.session_state:
+            del st.session_state["admin_tab_focus"]
+    
+    env_tab, cookie_tab, api_tab, content_tab, timer_tab, file_tab = st.tabs(tab_names)
     
     with env_tab:
         st.subheader("Environment Management")
@@ -865,6 +1096,347 @@ def show_admin_panel():
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
 
+    with content_tab:
+        st.subheader("Content Management")
+        st.info("Manage the admin-editable content that users can view from the login page.")
+        
+        # Load current admin content
+        current_content = load_admin_content()
+        
+        # Display current content info
+        content_lines = len(current_content.split('\n'))
+        content_chars = len(current_content)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Lines", content_lines)
+        with col2:
+            st.metric("Characters", content_chars)
+        
+        st.markdown("---")
+        
+        # Content editor
+        st.subheader("✏️ Edit Admin Content")
+        
+        edited_content = st.text_area(
+            "Content (Markdown Format)",
+            value=current_content,
+            height=300,
+            help="This content will be visible to all users when they click 'Manage Content' on the login page."
+        )
+        
+        # Action buttons
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("💾 Save Content", type="primary"):
+                if save_admin_content(edited_content):
+                    st.success("Admin content saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to save admin content")
+        
+        with col2:
+            if st.button("🔄 Reset to Default"):
+                default_content = "# Admin Editable Content\n\nThis content can be edited by administrators.\n\n## Welcome\n\nWelcome to the API Client Tester!\n\n## Getting Started\n\nPlease contact your administrator for more information."
+                if save_admin_content(default_content):
+                    st.success("Content reset to default!")
+                    st.rerun()
+        
+        with col3:
+            # Preview toggle
+            show_preview = st.checkbox("Show Preview", value=False)
+        
+        if show_preview:
+            st.markdown("---")
+            st.subheader("📄 Content Preview")
+            with st.container():
+                st.markdown(edited_content)
+
+    with timer_tab:
+        st.subheader("Timer Run Management")
+        st.info("Configure Timer Job URLs for easy copy & paste execution by users.")
+        
+        # Manual Timer Job URL Generator Section
+        with st.expander("📝 Timer Job URL Generator", expanded=True):
+            st.write("**Create Timer Job URLs for SIT environment:**")
+            st.info("URLs will be automatically saved to ADMIN_CONTENT.md for public viewing")
+            
+            # Initialize timer job entries in session state
+            if 'timer_job_entries' not in st.session_state:
+                st.session_state.timer_job_entries = []
+            
+            # Form to add new timer job entry
+            with st.form("add_timer_job_form"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    job_name = st.text_input(
+                        "Timer Job Name",
+                        placeholder="e.g., Daily Backup Job",
+                        help="Descriptive name for this timer job"
+                    )
+                
+                with col2:
+                    job_id = st.text_input(
+                        "Timer Job ID",
+                        placeholder="e.g., job123456",
+                        help="The actual timer job ID to replace in URLs"
+                    )
+                
+                # API Path configuration
+                api_path = st.text_input(
+                    "API Path Template",
+                    value="/DEVTimerJob/DEVTriggerTimerJob/{timer_job_id}",
+                    help="API path with {timer_job_id} placeholder"
+                )
+                
+                # Module selection
+                module = st.selectbox(
+                    "Module",
+                    ["EX", "AD"],
+                    help="EX: Assessment Module, AD: Administration Module"
+                )
+                
+                submitted = st.form_submit_button("➕ Add Timer Job Entry")
+                
+                if submitted and job_name and job_id:
+                    # Add to session state
+                    new_entry = {
+                        'name': job_name,
+                        'id': job_id,
+                        'path': api_path,
+                        'module': module
+                    }
+                    st.session_state.timer_job_entries.append(new_entry)
+                    
+                    # Auto-update ADMIN_CONTENT.md
+                    _update_admin_content_with_timer_jobs()
+                    
+                    st.success(f"Added timer job entry: {job_name}")
+                    st.success("✅ ADMIN_CONTENT.md updated automatically!")
+                    st.rerun()
+            
+            # Display existing entries with SIT URLs only
+            if st.session_state.timer_job_entries:
+                st.markdown("---")
+                st.write("**Generated Timer Job URLs (SIT Environment):**")
+                
+                # Check if SIT environment exists
+                enabled_envs = get_enabled_environments()
+                
+                if "SIT" in enabled_envs:
+                    for i, entry in enumerate(st.session_state.timer_job_entries):
+                        with st.container():
+                            # Entry header with edit/remove buttons
+                            col_header, col_edit, col_remove, col_update = st.columns([4, 1, 1, 2])
+                            
+                            with col_header:
+                                st.write(f"**🎯 {entry['name']}** (ID: `{entry['id']}`)")
+                            
+                            with col_edit:
+                                if st.button("✏️", key=f"edit_timer_entry_{i}", help="Edit entry"):
+                                    st.session_state[f"editing_timer_{i}"] = True
+                                    st.rerun()
+                            
+                            with col_remove:
+                                if st.button("🗑️", key=f"remove_timer_entry_{i}", help="Remove entry"):
+                                    st.session_state.timer_job_entries.pop(i)
+                                    # Auto-update ADMIN_CONTENT.md after removal
+                                    _update_admin_content_with_timer_jobs()
+                                    st.success("Timer job entry removed and ADMIN_CONTENT.md updated!")
+                                    st.rerun()
+                            
+                            with col_update:
+                                if st.button("🔄 Update Content", key=f"update_content_{i}", help="Update ADMIN_CONTENT.md"):
+                                    _update_admin_content_with_timer_jobs()
+                                    st.success("✅ ADMIN_CONTENT.md updated!")
+                            
+                            # Inline editing form
+                            if st.session_state.get(f"editing_timer_{i}", False):
+                                with st.form(f"edit_timer_form_{i}"):
+                                    edit_name = st.text_input("Name", value=entry['name'], key=f"edit_name_{i}")
+                                    edit_id = st.text_input("ID", value=entry['id'], key=f"edit_id_{i}")
+                                    edit_path = st.text_input("Path", value=entry['path'], key=f"edit_path_{i}")
+                                    edit_module = st.selectbox("Module", ["EX", "AD"], 
+                                                             index=0 if entry['module'] == 'EX' else 1, 
+                                                             key=f"edit_module_{i}")
+                                    
+                                    col_save, col_cancel = st.columns(2)
+                                    with col_save:
+                                        if st.form_submit_button("💾 Save & Update"):
+                                            st.session_state.timer_job_entries[i] = {
+                                                'name': edit_name,
+                                                'id': edit_id,
+                                                'path': edit_path,
+                                                'module': edit_module
+                                            }
+                                            st.session_state[f"editing_timer_{i}"] = False
+                                            
+                                            # Auto-update ADMIN_CONTENT.md after edit
+                                            _update_admin_content_with_timer_jobs()
+                                            
+                                            st.success("Timer job entry updated!")
+                                            st.success("✅ ADMIN_CONTENT.md updated automatically!")
+                                            st.rerun()
+                                    
+                                    with col_cancel:
+                                        if st.form_submit_button("❌ Cancel"):
+                                            st.session_state[f"editing_timer_{i}"] = False
+                                            st.rerun()
+                            else:
+                                # Display SIT URL only
+                                base_url = get_current_base_url("SIT", entry['module'])
+                                final_path = entry['path'].replace('{timer_job_id}', entry['id'])
+                                full_url = f"{base_url}{final_path}"
+                                
+                                # Display with SIT environment label and copy-friendly format
+                                st.text_input(
+                                    f"SIT Environment URL:",
+                                    value=full_url,
+                                    key=f"url_{entry['name']}_SIT_{i}",
+                                    help=f"Copy this URL to run {entry['name']} in SIT"
+                                )
+                            
+                            st.markdown("---")
+                        
+                    # Auto-update all content button
+                    if st.button("🔄 Update All to ADMIN_CONTENT.md", type="primary"):
+                        _update_admin_content_with_timer_jobs()
+                        st.success("✅ All timer job entries updated to ADMIN_CONTENT.md!")
+                        
+                else:
+                    st.warning("⚠️ SIT environment not found. Configure SIT environment first in the Environment Management tab.")
+            else:
+                st.info("💡 Add timer job entries above to generate SIT URLs and auto-update ADMIN_CONTENT.md.")
+        
+        # Predefined Timer Job APIs Section (from API configuration)
+        with st.expander("⚙️ Predefined Timer Job APIs", expanded=False):
+            st.write("**Configure Timer Job APIs for Public Display:**")
+            
+            # Load predefined Timer Job API if available
+            predefined_apis = load_api_configs(API_CONFIGS_FILE)
+            timer_job_apis = {name: config for name, config in predefined_apis.items() 
+                            if "timer" in name.lower() or "DEVTriggerTimerJob" in config.get('path', '')}
+            
+            if timer_job_apis:
+                st.success(f"Found {len(timer_job_apis)} Timer Job API(s) configured")
+                
+                # Add action buttons
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.button("📄 Generate Public Info", help="Generate markdown info for users"):
+                        markdown_content = generate_timer_job_markdown()
+                        st.success("Timer Job information generated!")
+                        with st.expander("Generated Markdown (Preview)", expanded=True):
+                            st.markdown(markdown_content)
+                
+                with col2:
+                    if st.button("🔧 Configure New API", help="Add Timer Job API in API Configuration tab"):
+                        st.info("💡 Switch to the 'API Configuration' tab to add/modify Timer Job APIs")
+                
+                with col3:
+                    if st.button("👀 Preview Public View", help="See what users will see"):
+                        show_timer_job_dialog()
+                
+                st.markdown("---")
+                
+                # List existing Timer Job APIs
+                for api_name, config in timer_job_apis.items():
+                    with st.container():
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.write(f"**{api_name}**")
+                            st.write(f"Path: `{config.get('path', 'N/A')}`")
+                            st.write(f"Method: `{config.get('method', 'N/A')}`")
+                            st.write(f"Module: `{config.get('module', 'EX')}`")
+                        with col2:
+                            if st.button(f"✏️ Edit", key=f"timer_edit_{api_name}"):
+                                st.info(f"💡 Use the 'API Configuration' tab to modify {api_name}")
+                        st.markdown("---")
+            else:
+                st.warning("No Timer Job APIs found in predefined configurations")
+                st.info("💡 **Tip**: Add a Timer Job API in the API Configuration tab first")
+                
+                if st.button("➕ Add Timer Job API", type="primary"):
+                    st.info("💡 Switch to the 'API Configuration' tab to add Timer Job APIs")
+        
+        # Public Information Section
+        with st.expander("📋 Public Timer Job Information", expanded=True):
+            st.write("**What users see when they click 'Timer Run' button:**")
+            
+            # Generate and display current markdown
+            current_markdown = generate_timer_job_markdown()
+            
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                st.markdown(current_markdown)
+            
+            with col2:
+                st.info("**Auto-Generated Content**\n\nThis content is automatically generated from your Timer Job API configurations and will be shown to all users.")
+                
+                if st.button("🔄 Refresh Preview"):
+                    st.rerun()
+        
+        # Environment URLs Generation Section
+        with st.expander("🌐 Environment URLs", expanded=False):
+            st.write("**Generate Timer Job URLs for all environments:**")
+            
+            enabled_envs = get_enabled_environments()
+            if enabled_envs and timer_job_apis:
+                for api_name, config in timer_job_apis.items():
+                    st.write(f"**{api_name}:**")
+                    
+                    for env in enabled_envs:
+                        base_url = get_current_base_url(env, config.get('module', 'EX'))
+                        path = config.get('path', '')
+                        
+                        if '{timer_job_id}' in path:
+                            sample_url = f"{base_url}{path}".replace('{timer_job_id}', '[TIMER_JOB_ID]')
+                        else:
+                            sample_url = f"{base_url}{path}"
+                        
+                        st.code(f"{env}: {sample_url}", language="text")
+                    
+                    st.markdown("---")
+            else:
+                st.warning("Configure Timer Job APIs and environments first.")
+        
+        # Configuration Management Section
+        with st.expander("⚙️ Configuration Management", expanded=False):
+            st.write("**Timer Job API Management Tools:**")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("**Quick Actions:**")
+                if st.button("📤 Export Timer Job Config", help="Export Timer Job APIs configuration"):
+                    if timer_job_apis:
+                        st.json(timer_job_apis)
+                        st.success("Timer Job configuration displayed above")
+                    else:
+                        st.warning("No Timer Job APIs to export")
+                
+                if st.button("🔄 Refresh Configuration", help="Reload Timer Job APIs from file"):
+                    st.success("Configuration refreshed!")
+                    st.rerun()
+            
+            with col2:
+                st.write("**Information:**")
+                st.info(f"**Total APIs:** {len(timer_job_apis)}")
+                st.info(f"**Environments:** {len(get_enabled_environments())}")
+                
+                if timer_job_apis:
+                    modules_used = set(config.get('module', 'EX') for config in timer_job_apis.values())
+                    st.info(f"**Modules:** {', '.join(modules_used)}")
+            
+            st.markdown("---")
+            st.write("**💡 Tips:**")
+            st.write("- Timer Job APIs configured here automatically appear in the public Timer Run dialog")
+            st.write("- Users can view Timer Job information by clicking the Timer Run button")
+            st.write("- Environment URLs are automatically generated for all configured environments")
+            st.write("- Use the API Configuration tab to add, edit, or remove Timer Job APIs")
+
     with file_tab:
         st.subheader("File Management")
         st.info("Manage uploaded Excel files from all users.")
@@ -1073,9 +1645,16 @@ def main():
     # Get file paths for current user
     file_paths = st.session_state.file_paths
 
-    # Help button above title
-    if st.button("📖 Instruction", help="Take a look about instruction"):
-        show_help_dialog()
+    # Help and content buttons above title
+    col1, col2, col3 = st.columns([1, 1, 8])
+    
+    with col1:
+        if st.button("📖 Instruction", help="Take a look about instruction"):
+            show_help_dialog()
+    
+    with col2:
+        if st.button("⏰ Timer Run", help="View Timer Job APIs information"):
+            show_timer_job_dialog()
 
     # Create a layout with title and user switcher
     title_col, user_col, _ = st.columns([2, 3, 3])
@@ -1704,15 +2283,26 @@ def load_predefined_api(file_path):
 
         # Ensure path starts with a slash
         path = ensure_path_format(path) if path else ""
-
+        
         # Get module from config or default to EX
         config_module = api_config.get("module", "EX")
         
-        # Add the full URL based on current environment and config module
-        api_config["url"] = f"{get_current_base_url(st.session_state.current_env, config_module)}{path}"
+        # Special handling for Timer Job APIs - don't build URL here, will be built dynamically
+        # Store the template path for Timer Job APIs
+        if "{timer_job_id}" in path:
+            # Keep the template path as is, URL will be built when sending request
+            api_config["url_path"] = path
+            api_config["path"] = path
+            # Ensure timer_job_id is copied from predefined config
+            if "timer_job_id" not in api_config and "timer_job_id" in filtered_configs[selected_api]:
+                api_config["timer_job_id"] = filtered_configs[selected_api]["timer_job_id"]
+            # Don't set api_config["url"] here - will be built dynamically in _handle_send_button
+        else:
+            # Add the full URL based on current environment and config module for non-timer APIs
+            api_config["url"] = f"{get_current_base_url(st.session_state.current_env, config_module)}{path}"
 
-        # Make sure path is stored
-        api_config["path"] = path
+            # Make sure path is stored
+            api_config["path"] = path
         
         # Store the module from config
         api_config["module"] = config_module
@@ -3566,6 +4156,91 @@ def _render_excel_upload_section_student_subject(api_name, api, file_paths):
             pass
 
 
+def _render_timer_job_body_section(api_name, api):
+    """Render special body section for Timer Job APIs (GET method)"""
+    
+    st.subheader("🕐 Timer Job API")
+    st.info("This API uses GET method to trigger timer job execution")
+    
+    # Timer Job ID configuration section
+    with st.expander("⚙️ Timer Job Configuration", expanded=True):
+        # Get current timer job ID from API config or use default
+        current_timer_id = api.get('timer_job_id', 'b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3')
+        
+        # Previous value tracking for auto-save
+        timer_id_key = f"original_timer_id_{api_name}"
+        if timer_id_key not in st.session_state:
+            st.session_state[timer_id_key] = current_timer_id
+        
+        # Input field for Timer Job ID
+        new_timer_id = st.text_input(
+            "Timer Job ID",
+            value=current_timer_id,
+            key=f"timer_job_id_{api_name}",
+            help="Enter the Timer Job ID (GUID format)",
+            placeholder="b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3"
+        )
+        
+        # Update API config with new timer ID
+        if new_timer_id != current_timer_id:
+            api['timer_job_id'] = new_timer_id
+            
+            # Update the URL path with new timer ID
+            base_path = "/DEVTimerJob/DEVTriggerTimerJob"
+            api['url_path'] = f"{base_path}/{new_timer_id}"
+            api['path'] = f"{base_path}/{new_timer_id}"
+            
+            # Auto-save changes
+            _save_current_user_data()
+            st.session_state[timer_id_key] = new_timer_id
+            
+        # Show current URL that will be called
+        current_env = st.session_state.get('current_env', 'SIT')
+        base_url = get_current_base_url(current_env, 'EX')
+        full_url = f"{base_url}/DEVTimerJob/DEVTriggerTimerJob/{new_timer_id}"
+        
+        st.write("**Current URL:**")
+        st.code(full_url)
+    
+    with st.expander("ℹ️ About This API", expanded=False):
+        st.markdown("""
+        **Timer Job API Information:**
+        
+        - **Method**: GET
+        - **Body**: None (GET request)
+        - **Headers**: Accept: text/plain
+        - **Purpose**: Trigger timer job execution
+        - **URL Format**: `/DEVTimerJob/DEVTriggerTimerJob/{timer_job_id}`
+        
+        **Example cURL:**
+        ```bash
+        curl -X 'GET' \\
+          'https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/DEVTimerJob/DEVTriggerTimerJob/b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3' \\
+          -H 'accept: text/plain'
+        ```
+        """)
+    
+    # Set appropriate headers for GET timer job API
+    if 'headers' not in api:
+        api['headers'] = {}
+    
+    # Set accept header to text/plain for timer job (no Content-Type needed for GET)
+    api['headers']['accept'] = 'text/plain'
+    
+    # Remove any body content for GET request
+    if 'body' in api:
+        del api['body']
+    
+    print(f"[DEBUG] Timer Job API config: {api}")
+    
+    with st.expander("📝 Request Configuration", expanded=False):
+        st.write("**Request Method**: GET (no body required)")
+        st.write("**Headers**:")
+        st.code("Accept: text/plain")
+        
+        st.info("💡 This API uses GET method with no request body. Configure the Timer Job ID above and click Run API.")
+
+
 def _render_excel_upload_section_allocate_student(api_name, api, file_paths):
     """Render Excel upload section for Allocate Student API (dual API call)"""
     
@@ -3840,8 +4515,11 @@ def _render_body_section(api_name, api, file_paths):
     is_ad_module = api_module == "AD"
     is_ex_module = api_module == "EX"
     
+    # Special handling for Timer Job API (DEVTriggerTimerJob) - empty body POST
+    if (api_name and "DEVTriggerTimerJob" in api_name) or ("DEVTriggerTimerJob" in api.get('path', '')) or ("DEVTriggerTimerJob" in api.get('url_path', '')):
+        _render_timer_job_body_section(api_name, api)
     # Special handling for AD module APIs with Excel upload
-    if is_ad_module and api_name and "DEVEXUpdateStudentUser" in api_name:
+    elif is_ad_module and api_name and "DEVEXUpdateStudentUser" in api_name:
         _render_excel_upload_section(api_name, api, file_paths)
     # Special handling for EX module APIs with Excel upload
     elif is_ex_module and api_name and "DEVCreateDataV2" in api_name:
@@ -4174,6 +4852,26 @@ def _handle_send_button(api_name, api, file_paths):
     
     with st.spinner("Sending request..."):
         try:
+            # Build the full URL right before sending request
+            api_module = api.get('module', 'EX')
+            base_url = get_current_base_url(st.session_state.current_env, api_module)
+            
+            # Get the path - could be from path, url_path, or timer job specific
+            path = api.get("path", api.get("url_path", ""))
+            
+            # Special handling for Timer Job APIs - replace {timer_job_id} placeholder
+            if "{timer_job_id}" in path:
+                timer_job_id = api.get('timer_job_id', 'b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3')
+                path = path.replace("{timer_job_id}", timer_job_id)
+                print(f"[DEBUG] Timer Job - Original path: {api.get('path', api.get('url_path', ''))}")
+                print(f"[DEBUG] Timer Job - Timer ID: {timer_job_id}")
+                print(f"[DEBUG] Timer Job - Final path: {path}")
+                print(f"[DEBUG] Timer Job - Method: {api.get('method', 'GET')}")
+            
+            # Build full URL
+            api['url'] = f"{base_url}{path}"
+            print(f"[DEBUG] Final URL: {api['url']}")
+            
             # Dynamically load cookies right before sending request
             _load_dynamic_cookies_for_request(api)
             
@@ -4576,9 +5274,18 @@ def display_api_tester(api_name, file_paths):
     base_url = get_current_base_url(st.session_state.current_env, api_module)
     path = api.get("path", "")
     url_path = api.get("url_path", "")
-
-    st.write(f"Base URL: {base_url}")
-    st.write(f"URL Path: {url_path}")  # Use the actual path that's stored in the API config
+    
+    # Special display for Timer Job APIs
+    if "{timer_job_id}" in url_path:
+        timer_job_id = api.get('timer_job_id', 'b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3')
+        actual_path = url_path.replace("{timer_job_id}", timer_job_id)
+        st.write(f"Base URL: {base_url}")
+        st.write(f"URL Path: {actual_path}")
+        st.write(f"Timer Job ID: {timer_job_id}")
+    else:
+        st.write(f"Base URL: {base_url}")
+        st.write(f"URL Path: {url_path}")  # Use the actual path that's stored in the API config
+    
     st.write(f"Method: {api['method']}")
     st.write(f"Module: {api_module} ({'Assessment' if api_module == 'EX' else 'Administration'})")
 
