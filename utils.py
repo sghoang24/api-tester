@@ -298,17 +298,31 @@ def make_http_request(api: Dict[str, Any]) -> requests.Response:
     headers = api.get('headers', {})
     params = api.get('params', {})
     cookies = api.get('cookies', {})
+    body = api.get('body', {})
     
     if method == "GET":
         return requests.get(url, headers=headers, params=params, cookies=cookies)
     elif method == "POST":
-        return requests.post(url, headers=headers, json=api.get('body', {}), params=params, cookies=cookies)
+        # Check if body is empty string (for timer job APIs)
+        if body == "":
+            return requests.post(url, headers=headers, data="", params=params, cookies=cookies)
+        else:
+            return requests.post(url, headers=headers, json=body, params=params, cookies=cookies)
     elif method == "PUT":
-        return requests.put(url, headers=headers, json=api.get('body', {}), params=params, cookies=cookies)
+        if body == "":
+            return requests.put(url, headers=headers, data="", params=params, cookies=cookies)
+        else:
+            return requests.put(url, headers=headers, json=body, params=params, cookies=cookies)
     elif method == "DELETE":
-        return requests.delete(url, headers=headers, json=api.get('body', {}), params=params, cookies=cookies)
+        if body == "":
+            return requests.delete(url, headers=headers, data="", params=params, cookies=cookies)
+        else:
+            return requests.delete(url, headers=headers, json=body, params=params, cookies=cookies)
     elif method == "PATCH":
-        return requests.patch(url, headers=headers, json=api.get('body', {}), params=params, cookies=cookies)
+        if body == "":
+            return requests.patch(url, headers=headers, data="", params=params, cookies=cookies)
+        else:
+            return requests.patch(url, headers=headers, json=body, params=params, cookies=cookies)
     else:
         raise ValueError(f"Unsupported HTTP method: {method}")
 
