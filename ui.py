@@ -4156,6 +4156,318 @@ def _render_excel_upload_section_student_subject(api_name, api, file_paths):
             pass
 
 
+def _render_auto_mark_entry_section(api_name, api, file_paths):
+    """Render special section for Auto Mark Entry API with batch processing"""
+    
+    st.subheader("📝 Auto Mark Entry API")
+    st.info("Choose between Batch Processing (for multiple subjects) or Manual JSON Input (for single subject)")
+    
+    # Input mode selection
+    input_mode = st.radio(
+        "Input Mode",
+        ["🚀 Batch Processing", "📝 Manual JSON Input"],
+        key=f"input_mode_{api_name}",
+        help="Batch Processing: Automatically call API for multiple Subject IDs | Manual JSON: Edit JSON body directly"
+    )
+    
+    if input_mode == "🚀 Batch Processing":
+        # Batch configuration section
+        with st.expander("⚙️ Batch Configuration", expanded=True):
+            st.write("**Configure batch parameters for Auto Mark Entry:**")
+            
+            # Semester ID input
+            semester_id = st.text_input(
+                "Semester ID",
+                value=api.get('body', {}).get('semesterId', ''),
+                key=f"semester_id_{api_name}",
+                help="The semester ID for all subject entries"
+            )
+            
+            # Max Mark input
+            col1, col2 = st.columns(2)
+            with col1:
+                max_mark = st.number_input(
+                    "Max Mark",
+                    min_value=0,
+                    max_value=100,
+                    value=api.get('body', {}).get('maxMark', 100),
+                    key=f"max_mark_{api_name}",
+                    help="Maximum mark value"
+                )
+            
+            with col2:
+                min_mark = st.number_input(
+                    "Min Mark",
+                    min_value=0,
+                    max_value=100,
+                    value=api.get('body', {}).get('minMark', 0),
+                    key=f"min_mark_{api_name}",
+                    help="Minimum mark value"
+                )
+            
+            st.markdown("---")
+            
+            # Subject IDs list input
+            st.write("**Subject IDs List:**")
+            st.write("Enter Subject IDs (one per line or comma-separated)")
+            
+            subject_ids_input = st.text_area(
+                "Subject IDs",
+                value="",
+                height=150,
+                key=f"subject_ids_{api_name}",
+                help="Enter Subject IDs separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
+                placeholder="Enter Subject IDs here...\nExample:\n3fa85f64-5717-4562-b3fc-2c963f66afa6\n4fb96g75-6828-5673-c4gd-3d074g77bgb7"
+            )
+            
+            # Parse subject IDs
+            subject_ids = []
+            if subject_ids_input:
+                # Split by newlines and commas, then clean up
+                raw_ids = subject_ids_input.replace(',', '\n').split('\n')
+                subject_ids = [sid.strip() for sid in raw_ids if sid.strip()]
+            
+            # Display parsed IDs
+            if subject_ids:
+                st.success(f"✅ Found {len(subject_ids)} Subject ID(s)")
+                with st.expander("📋 Preview Subject IDs", expanded=False):
+                    for i, sid in enumerate(subject_ids, 1):
+                        st.text(f"{i}. {sid}")
+            else:
+                st.warning("⚠️ No Subject IDs entered yet")
+            
+            st.markdown("---")
+            
+            # Update API body with current values
+            if 'body' not in api:
+                api['body'] = {}
+            
+            api['body']['semesterId'] = semester_id
+            api['body']['maxMark'] = int(max_mark)
+            api['body']['minMark'] = int(min_mark)
+            
+            # Store subject IDs in session state for batch processing
+            st.session_state[f'batch_subject_ids_{api_name}'] = subject_ids
+        
+        # Batch execution button
+        if subject_ids and semester_id:
+            st.markdown("---")
+            
+            # Explain what batch processing does
+            with st.expander("ℹ️ How Batch Processing Works", expanded=False):
+                st.write("**What does Batch Processing do?**")
+                st.write("1. 📋 Takes your list of Subject IDs")
+                st.write("2. 🔁 Loops through each Subject ID one by one")
+                st.write("3. 📞 Calls the Auto Mark Entry API for each Subject ID")
+                st.write("4. ✅ Uses the same Semester ID, Max Mark, and Min Mark for all calls")
+                st.write("5. 📊 Shows progress and results in real-time")
+                st.write("")
+                st.write("**Example:**")
+                st.code("""
+If you have 3 Subject IDs: [aaa, bbb, ccc]
+With Semester ID: xxx, Max Mark: 100, Min Mark: 60
+
+It will make 3 API calls:
+1. POST /automarkentry with {semesterId: xxx, subjectId: aaa, maxMark: 100, minMark: 60}
+2. POST /automarkentry with {semesterId: xxx, subjectId: bbb, maxMark: 100, minMark: 60}
+3. POST /automarkentry with {semesterId: xxx, subjectId: ccc, maxMark: 100, minMark: 60}
+                """)
+            
+            if st.button("🚀 Execute Batch Processing", type="primary", key=f"batch_execute_{api_name}"):
+                _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths)
+        else:
+            st.info("💡 Enter Semester ID and at least one Subject ID to enable batch processing")
+    
+    else:  # Manual JSON Input mode
+        with st.expander("📝 Manual JSON Input", expanded=True):
+            st.write("**Edit the JSON body directly for single API execution:**")
+            st.info("💡 Use this mode when you want to call the API once with specific parameters")
+            
+            # Show current body as JSON
+            if 'body' not in api:
+                api['body'] = {
+                    'semesterId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                    'subjectId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                    'maxMark': 100,
+                    'minMark': 0
+                }
+            
+            original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
+            
+            # Add helpful buttons for common JSON operations
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("📋 Reset to Default", key=f"reset_json_{api_name}"):
+                    api['body'] = {
+                        'semesterId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                        'subjectId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                        'maxMark': 100,
+                        'minMark': 0
+                    }
+                    st.rerun()
+            
+            with col2:
+                if st.button("🔄 Format JSON", key=f"format_json_{api_name}"):
+                    try:
+                        parsed = json.loads(st.session_state.get(f"json_body_manual_{api_name}", original_json))
+                        formatted = json.dumps(parsed, indent=2, ensure_ascii=False)
+                        st.session_state[f"json_body_manual_{api_name}"] = formatted
+                        st.rerun()
+                    except:
+                        st.error("Cannot format invalid JSON")
+            
+            with col3:
+                st.write("")  # Empty space for alignment
+            
+            body_json = st.text_area(
+                "JSON Body",
+                value=original_json,
+                height=250,
+                key=f"json_body_manual_{api_name}",
+                help="Edit JSON body for single API execution. Make sure to include all required fields: semesterId, subjectId, maxMark, minMark"
+            )
+            
+            try:
+                parsed_body = json.loads(body_json)
+                api['body'] = parsed_body
+                
+                # Validate required fields
+                required_fields = ['semesterId', 'subjectId', 'maxMark', 'minMark']
+                missing_fields = [field for field in required_fields if field not in parsed_body]
+                
+                if missing_fields:
+                    st.warning(f"⚠️ Missing required fields: {', '.join(missing_fields)}")
+                else:
+                    st.success("✅ JSON is valid and contains all required fields")
+                    
+                    # Show a preview of what will be sent
+                    with st.expander("📋 Request Preview", expanded=False):
+                        st.json(parsed_body)
+                        
+            except json.JSONDecodeError as e:
+                st.error(f"❌ Invalid JSON: {str(e)}")
+
+
+def _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths):
+    """Handle batch processing for Auto Mark Entry API"""
+    
+    total_ids = len(subject_ids)
+    success_count = 0
+    failed_count = 0
+    results = []
+    
+    # Create progress tracking
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    st.write("---")
+    st.subheader("📊 Batch Processing Results")
+    
+    # Process each subject ID
+    for i, subject_id in enumerate(subject_ids, 1):
+        status_text.text(f"Processing {i}/{total_ids}: {subject_id}")
+        progress_bar.progress(i / total_ids)
+        
+        # Create API call for this subject ID
+        batch_api = api.copy()
+        batch_api['body'] = batch_api.get('body', {}).copy()
+        batch_api['body']['subjectId'] = subject_id
+        
+        try:
+            # Load cookies dynamically
+            _load_dynamic_cookies_for_request(batch_api)
+            
+            # Get current module and build URL
+            api_module = batch_api.get('module', 'EX')
+            base_url = get_current_base_url(st.session_state.current_env, api_module)
+            path = batch_api.get('path', '')
+            full_url = f"{base_url}{path}"
+            
+            # Update batch_api with full URL for the request
+            batch_api['url'] = full_url
+            
+            # Make the request
+            response = make_http_request(batch_api)
+            
+            # Check response status
+            if response.status_code >= 200 and response.status_code < 300:
+                success_count += 1
+                results.append({
+                    'subject_id': subject_id,
+                    'status': 'success',
+                    'status_code': response.status_code,
+                    'message': 'Success'
+                })
+                st.success(f"✅ {i}/{total_ids}: {subject_id} - Success")
+            else:
+                failed_count += 1
+                results.append({
+                    'subject_id': subject_id,
+                    'status': 'failed',
+                    'status_code': response.status_code,
+                    'message': f"Error: {response.status_code}"
+                })
+                st.error(f"❌ {i}/{total_ids}: {subject_id} - Failed (Status: {response.status_code})")
+            
+            # Small delay between requests to avoid overwhelming the server
+            time.sleep(0.5)
+            
+        except Exception as e:
+            failed_count += 1
+            results.append({
+                'subject_id': subject_id,
+                'status': 'error',
+                'status_code': 'N/A',
+                'message': str(e)
+            })
+            st.error(f"❌ {i}/{total_ids}: {subject_id} - Error: {str(e)}")
+    
+    # Complete
+    progress_bar.progress(1.0)
+    status_text.text("✅ Batch processing completed!")
+    
+    # Summary
+    st.write("---")
+    st.subheader("📈 Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Processed", total_ids)
+    with col2:
+        st.metric("Success", success_count, delta=f"{(success_count/total_ids)*100:.1f}%")
+    with col3:
+        st.metric("Failed", failed_count, delta=f"-{(failed_count/total_ids)*100:.1f}%" if failed_count > 0 else "0%")
+    
+    # Detailed results
+    with st.expander("📋 Detailed Results", expanded=True):
+        results_df = pd.DataFrame(results)
+        st.dataframe(results_df, use_container_width=True)
+    
+    # Save to history if there were successes
+    if success_count > 0:
+        batch_summary = {
+            'total': total_ids,
+            'success': success_count,
+            'failed': failed_count,
+            'subject_ids': subject_ids
+        }
+        
+        # Create a summary response dictionary for history (matching expected format)
+        summary_response = {
+            'status_code': 200,
+            'time': 0,  # Batch processing doesn't track total time
+            'headers': {'Content-Type': 'application/json'},
+            'content': batch_summary
+        }
+        
+        _save_to_history(
+            f"{api_name} (Batch)",
+            api,
+            summary_response,
+            file_paths["API_HISTORY_FILE"]
+        )
+
+
 def _render_timer_job_body_section(api_name, api):
     """Render special body section for Timer Job APIs (GET method)"""
     
@@ -4518,6 +4830,10 @@ def _render_body_section(api_name, api, file_paths):
     # Special handling for Timer Job API (DEVTriggerTimerJob) - empty body POST
     if (api_name and "DEVTriggerTimerJob" in api_name) or ("DEVTriggerTimerJob" in api.get('path', '')) or ("DEVTriggerTimerJob" in api.get('url_path', '')):
         _render_timer_job_body_section(api_name, api)
+    # Special handling for Auto Mark Entry API with batch processing
+    elif (api_name and "Auto Mark Entry" in api_name):
+    # elif (api_name and "Auto Mark Entry" in api_name) or ("automarkentry" in api.get('path', '').lower()) or ("automarkentry" in api.get('url_path', '').lower()):
+        _render_auto_mark_entry_section(api_name, api, file_paths)
     # Special handling for AD module APIs with Excel upload
     elif is_ad_module and api_name and "DEVEXUpdateStudentUser" in api_name:
         _render_excel_upload_section(api_name, api, file_paths)
@@ -4686,13 +5002,14 @@ def _render_body_section(api_name, api, file_paths):
                 pass
 
 
-def _render_cookies_section(api):
+def _render_cookies_section(api, api_name, location="main"):
     """Render the cookies configuration section"""
     cookie_options = ["Use Environment Cookies", "No Cookies", "Custom Cookies"]
     cookie_choice = st.selectbox(
         "Cookie Options", 
         cookie_options,
-        index=0  # Default to "Use Environment Cookies"
+        index=0,  # Default to "Use Environment Cookies"
+        key=f"cookie_options_selectbox_{api_name}_{location}"  # Add unique key per API and location to avoid duplicate element ID error
     )
     
     # Store cookie choice in session state for dynamic loading
@@ -5132,7 +5449,6 @@ def _load_dynamic_cookies_for_request(api):
                 print(f"[DEBUG] Using admin cookies for {current_env}: {len(cookies_dict)} cookies loaded")
                 if cookies_dict:
                     sample_keys = list(cookies_dict.keys())[:3]
-                    print(f"[DEBUG] Sample admin cookies keys: {sample_keys}")
             else:
                 api['cookies'] = {}
                 print(f"[DEBUG] No admin cookies found for {current_env}")
@@ -5158,11 +5474,9 @@ def _load_dynamic_cookies_for_request(api):
     # Final verification
     final_cookies = api.get('cookies', {})
     if final_cookies:
-        print(f"[DEBUG] ✅ Final cookies set in API config: {len(final_cookies)} cookies")
         # Show a sample cookie name for verification (not value for security)
         if final_cookies:
             first_cookie_name = list(final_cookies.keys())[0]
-            print(f"[DEBUG] First cookie name: {first_cookie_name}")
     else:
         print("[DEBUG] ❌ WARNING: No cookies set in API config!")
         
@@ -5315,7 +5629,7 @@ def display_api_tester(api_name, file_paths):
             api["url"] = f"{base_url}{path_to_use}"
 
         # Cookie options (process first so headers can show cookie info)
-        _render_cookies_section(api)
+        _render_cookies_section(api, api_name, location="edit_path")
 
         # Headers section
         _render_headers_section(api)
@@ -5331,13 +5645,27 @@ def display_api_tester(api_name, file_paths):
     
     # Request Body (for POST, PUT, etc.)
     if api['method'] in ["POST", "PUT", "PATCH"]:
-        _render_body_section(url_path, api, file_paths)
+        _render_body_section(api_name, api, file_paths)
     
-    # Add some spacing before buttons for all users
-    st.write("")  # Add some space
+    # Check if this is Auto Mark Entry API in Batch Processing mode
+    is_auto_mark_entry = (
+        (api_name and "Auto Mark Entry" in api_name) 
+        # ("automarkentry" in api.get('path', '').lower()) or 
+        # ("automarkentry" in api.get('url_path', '').lower())
+    )
+    is_batch_mode = st.session_state.get(f"input_mode_{api_name}") == "🚀 Batch Processing"
+    
+    # Only show Cookies section and action buttons if not in Batch Processing mode for Auto Mark Entry
+    if not (is_auto_mark_entry and is_batch_mode):
+        # Cookies section
+        with st.expander("Cookies", expanded=False):
+            _render_cookies_section(api, api_name, location="action_section")
         
-    # Action buttons
-    _render_action_buttons(api_name, api, file_paths, is_temp)
+        # Add some spacing before buttons for all users
+        st.write("")  # Add some space
+            
+        # Action buttons
+        _render_action_buttons(api_name, api, file_paths, is_temp)
 
     # Show response
     _render_response_section(api_name)
