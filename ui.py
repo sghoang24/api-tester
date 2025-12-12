@@ -4156,6 +4156,23 @@ def _render_excel_upload_section_student_subject(api_name, api, file_paths):
             pass
 
 
+def _update_batch_mark_values(api_name, api, max_mark_value, min_mark_value):
+    """Update batch processing mark values in session state and API body"""
+    # Update session state for persistence
+    st.session_state[f"max_mark_value_{api_name}"] = max_mark_value
+    st.session_state[f"min_mark_value_{api_name}"] = min_mark_value
+    
+    # Update API body
+    if 'body' not in api:
+        api['body'] = {}
+    
+    api['body']['maxMark'] = int(max_mark_value)
+    api['body']['minMark'] = int(min_mark_value)
+    
+    # Save to user data for persistence
+    _save_current_user_data()
+
+
 def _render_auto_mark_entry_section(api_name, api, file_paths):
     """Render special section for Auto Mark Entry API with batch processing"""
     
@@ -4185,14 +4202,22 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             # Max Mark input
             col1, col2 = st.columns(2)
+            
+            # Initialize session state for auto-save if not exists
+            if f"max_mark_value_{api_name}" not in st.session_state:
+                st.session_state[f"max_mark_value_{api_name}"] = api.get('body', {}).get('maxMark', 100)
+            if f"min_mark_value_{api_name}" not in st.session_state:
+                st.session_state[f"min_mark_value_{api_name}"] = api.get('body', {}).get('minMark', 0)
+            
             with col1:
                 max_mark = st.number_input(
                     "Max Mark",
                     min_value=0,
                     max_value=100,
-                    value=api.get('body', {}).get('maxMark', 100),
+                    value=st.session_state[f"max_mark_value_{api_name}"],
                     key=f"max_mark_{api_name}",
-                    help="Maximum mark value"
+                    help="Maximum mark value",
+                    on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
                 )
             
             with col2:
@@ -4200,9 +4225,10 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     "Min Mark",
                     min_value=0,
                     max_value=100,
-                    value=api.get('body', {}).get('minMark', 0),
+                    value=st.session_state[f"min_mark_value_{api_name}"],
                     key=f"min_mark_{api_name}",
-                    help="Minimum mark value"
+                    help="Minimum mark value",
+                    on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
                 )
             
             st.markdown("---")
@@ -4362,6 +4388,8 @@ def _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths):
     
     st.write("---")
     st.subheader("📊 Batch Processing Results")
+
+    print("subject_ids:", subject_ids)  # Debugging line
     
     # Process each subject ID
     for i, subject_id in enumerate(subject_ids, 1):
@@ -4371,7 +4399,7 @@ def _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths):
         # Create API call for this subject ID
         batch_api = api.copy()
         batch_api['body'] = batch_api.get('body', {}).copy()
-        batch_api['body']['subjectId'] = subject_id
+        batch_api['body']['subjectCode'] = subject_id
         
         try:
             # Load cookies dynamically
