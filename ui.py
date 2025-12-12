@@ -4207,17 +4207,17 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             st.markdown("---")
             
-            # Subject IDs list input
-            st.write("**Subject IDs List:**")
-            st.write("Enter Subject IDs (one per line or comma-separated)")
+            # Subject Codes list input
+            st.write("**Subject Codes List:**")
+            st.write("Enter Subject Codes (one per line or comma-separated)")
             
             subject_ids_input = st.text_area(
-                "Subject IDs",
+                "Subject Codes",
                 value="",
                 height=150,
                 key=f"subject_ids_{api_name}",
-                help="Enter Subject IDs separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
-                placeholder="Enter Subject IDs here...\nExample:\n3fa85f64-5717-4562-b3fc-2c963f66afa6\n4fb96g75-6828-5673-c4gd-3d074g77bgb7"
+                help="Enter Subject Codes separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
+                placeholder="Enter Subject Codes here...\nExample:\nB34_4\nB34_5"
             )
             
             # Parse subject IDs
@@ -4229,12 +4229,12 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             # Display parsed IDs
             if subject_ids:
-                st.success(f"✅ Found {len(subject_ids)} Subject ID(s)")
-                with st.expander("📋 Preview Subject IDs", expanded=False):
+                st.success(f"✅ Found {len(subject_ids)} Subject Code(s)")
+                with st.expander("📋 Preview Subject Codes", expanded=False):
                     for i, sid in enumerate(subject_ids, 1):
                         st.text(f"{i}. {sid}")
             else:
-                st.warning("⚠️ No Subject IDs entered yet")
+                st.warning("⚠️ No Subject Codes entered yet")
             
             st.markdown("---")
             
@@ -4264,19 +4264,19 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 st.write("")
                 st.write("**Example:**")
                 st.code("""
-If you have 3 Subject IDs: [aaa, bbb, ccc]
+If you have 3 Subject Codes: [aaa, bbb, ccc]
 With Semester ID: xxx, Max Mark: 100, Min Mark: 60
 
 It will make 3 API calls:
-1. POST /automarkentry with {semesterId: xxx, subjectId: aaa, maxMark: 100, minMark: 60}
-2. POST /automarkentry with {semesterId: xxx, subjectId: bbb, maxMark: 100, minMark: 60}
-3. POST /automarkentry with {semesterId: xxx, subjectId: ccc, maxMark: 100, minMark: 60}
+1. POST /automarkentry with {semesterId: xxx, subjectCode: aaa, maxMark: 100, minMark: 60}
+2. POST /automarkentry with {semesterId: xxx, subjectCode: bbb, maxMark: 100, minMark: 60}
+3. POST /automarkentry with {semesterId: xxx, subjectCode: ccc, maxMark: 100, minMark: 60}
                 """)
             
             if st.button("🚀 Execute Batch Processing", type="primary", key=f"batch_execute_{api_name}"):
                 _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths)
         else:
-            st.info("💡 Enter Semester ID and at least one Subject ID to enable batch processing")
+            st.info("💡 Enter Semester ID and at least one Subject Code to enable batch processing")
     
     else:  # Manual JSON Input mode
         with st.expander("📝 Manual JSON Input", expanded=True):
@@ -4287,7 +4287,7 @@ It will make 3 API calls:
             if 'body' not in api:
                 api['body'] = {
                     'semesterId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-                    'subjectId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                    'subjectCode': 'B34_4',
                     'maxMark': 100,
                     'minMark': 0
                 }
@@ -4300,7 +4300,7 @@ It will make 3 API calls:
                 if st.button("📋 Reset to Default", key=f"reset_json_{api_name}"):
                     api['body'] = {
                         'semesterId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-                        'subjectId': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                        'subjectCode': 'B34_4',
                         'maxMark': 100,
                         'minMark': 0
                     }
