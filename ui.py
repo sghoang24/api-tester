@@ -4266,14 +4266,14 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             # Subject Codes list input
             st.write("**Student IDs List:**")
-            st.write("Enter Subject IDs (one per line or comma-separated)")
+            st.write("Enter Student IDs (one per line or comma-separated)")
             
             student_ids_input = st.text_area(
                 "Subject IDs",
                 value="",
                 height=150,
                 key=f"student_ids_{api_name}",
-                help="Enter Subject Codes separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
+                help="Enter Student IDs separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
                 placeholder="Enter StudentIds here...\nExample:\n3fa85f64-5717-4562-b3fc-2c963f66afa1\n3fa85f64-5717-4562-b3fc-2c963f66afa2"
             )
             
@@ -4291,7 +4291,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     for i, sid in enumerate(student_ids, 1):
                         st.text(f"{i}. {sid}")
             else:
-                st.warning("⚠️ No Subject IDs entered yet")
+                st.warning("⚠️ No Student IDs entered yet")
             
             st.markdown("---")
             
