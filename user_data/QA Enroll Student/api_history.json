@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "timestamp": "2026-01-07 21:54:40",
+    "name": "Auto Mark Entry (Batch)",
+    "environment": "UAT SUPP2",
+    "path": "/StudentSubjectMark/automarkentry",
+    "method": "POST",
+    "status_code": 200,
+    "time_ms": 0,
+    "config": {
+      "path": "/StudentSubjectMark/automarkentry",
+      "method": "POST",
+      "module": "EX",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cookie": "Cookies=e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQaoVAzK5Rz2RTWQ80MIBoXpXYuxWnfgf6a9sv64yMN-8FWaxFVapWuK0TtdC9sQrCc9KjNyzyohzvjQg8NMoGLafVw7xCH3_jEqzcYktMe5P9u5Kw-4-_vamEo11S6KFAzPX8kSmPgOD7zRMHXDId7hz3eI34ud8yQWvs6ZCGZ5b62ORe8CGtwrgWhSkWpCXcQ3_uClTdFg6SR1KaJdlt-nhCtL4yvL8cf1m5W1HVo31RAmVu_j_hHyPnAbmPRbLjSQfaQHJUdgzAdF4bJQsDy3AAStO2j4dIPes2Vh0DkRpbFH15QDEkUFxWdLixSC6xqY23HiXU7xdbvcQtw9ELmhx6mnqxzqgezpf3LsjSwytf_aHk9NIHQEXaDNL_VeWDB3Xfepkp4NM6gkyjj26rwfewm98wq7S2TdhAdrhP3chJL6smydquZmJKQhUVhrnPjyF9rgpp7AsXNWhVQDOIgMcptopgPteiO8h2VEsOaikubf8kV_cFs5c8exnmrvBWFEBCQMY9MMaTpD-xz1bUGwHJDDg_DQLX6hCeKLV_RAo_5y5x31ymTDHfPK0HRR2vNQp6y39T4oKK3tMn8uobNFF35bZOZUtGeBq--57Gqe7RA6U4pzhZLcn3QVsienjdCWqV2v21EedfNvqVjMu2Cx2dQkTTWDYsmGpyL-NOpLWyvQuGaTvmUNYJ1rZdCtlSWaCppJhhSpub-dxhQYaiyXfpkJOCgTKNrAnwqDlXtjZ1kqEcY6kQXsF4qtA7qvCVK91yzNYRa6SbkLoSBQFqON_9B70mUsqAQu57JLrK_uX7KFnzWpa3FN34yGz1yuxjK14hWwCw1LjYaD72jhDNoQIQvB7fFvxvmGyZKNphdxOtdeKh3SALe-SE3LCxmtX2AdtKpc-TVaLKEdjm3YyRP931h9u9LcKTv_NDiFIOp6TQyj74zyawB0Nu5f-CJNLD2J3ARAZu1kvJQN6tygIkNt8_4kT9pM8suliZ3c9iO-bRzkhjFmy0lV8EhkhTTlPxLV_njZiJVDrtd_H5fC153eoFsbwjxBJmP4cvx0v4HY_Rbj3NY0hzReqMUJ5er9qEFeV8SIy8myDOm0HzaE7gNTog-eUTevyGCozVVfeydlp_qF9Rg9Svw29WzUN_6ie9nooGhUwuk1CSFB3YMbKyA-JJJxW3Be4qtjWFYnQe4LJ_kDdXBPdPc-8Ml60HCYAQYhuOnQrZnQ6zcf9dpz6Fk8qK5eERZ5VMrHoM5YTFewUQbF-ijJhaTtSjuHLXMTl0ocXrfMfoswPyf9xTVmVCVcCLVpbaX3wYBDZhqqzT9zQf7I_Hm7fZdfTXIADq9rQ_QxMF0jQqgOPBnFXv1_fKrEL1Yy76DE7Vke30dVC3emXV2kC1frnHZvWEV5OHuiOF67uRGy2kYaSrrkqZQrNHK3O9e1BtujKPo007p7URfFC8C0fQSX_yLSiJumeQfoHCZG3gfhmVUoU3aKvt63gLJGJNbXXpVTdu2Au73Mf9J1fv8lObFp_OBlcz3OYItQaSVDrI96TJ0ZOWtd1ref6663kvVpB-tPmQVd_0ef68VJF1OzS6fo0vhAyfzViaTO1Xy4Q6y8Df9Hi7V33CzBPa5lhtbOuthKgxmd4gMn__zRUdyl1AzdWx4XsbCS4e60cMIrm1ZkTaf9Dzs8gscWuFrF-pOPXXCNJaGPNkVokS9KLlF9xkdOk_gcrSRrTKWZFzSFa_kkWQuehoWJ5V9YYmOGqevXa-OpYlswYrWwoK79Lde0zpLJJ11yDuBez1Jln6f7prJtZSHd290wFGlBXkdqsCC5jKO3hnK77oty7AUiV5oomn84xu9FZvgKAAv--GlOCRCVhG0XYcV_rtg4qGkfVGMkaUwmOPw7ARmYfd7eOmIZsep0k9u9LU8ILcNzVGkfiwDhvxNFpT37Hb-mApyEJuFPaoduDjF2p6TLI1fgM; _ga=GA1.1.1813041547.1767793817; _ga_Y7K6FLL3VV=GS2.1.s1767796839$o2$g1$t1767796842$j57$l0$h0"
+      },
+      "body": {
+        "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
+        "subjectCode": "B34_4",
+        "studentIds": [
+          "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        ],
+        "maxMark": 10,
+        "minMark": 0
+      },
+      "url": "https://admin-tp-esms-uat-supp2.dev.edutechonline.org/api/assessment/api/v1/StudentSubjectMark/automarkentry",
+      "is_temporary": true,
+      "original_name": "Auto Mark Entry",
+      "cookie_choice": "Use Environment Cookies",
+      "cookies": {
+        "Cookies": "e_QXkr75M0S3KrVtzndU-iXcdH8yGMHHCBOc9EqncSQIs0wvgQCKvtN7MpSTZGvQaoVAzK5Rz2RTWQ80MIBoXpXYuxWnfgf6a9sv64yMN-8FWaxFVapWuK0TtdC9sQrCc9KjNyzyohzvjQg8NMoGLafVw7xCH3_jEqzcYktMe5P9u5Kw-4-_vamEo11S6KFAzPX8kSmPgOD7zRMHXDId7hz3eI34ud8yQWvs6ZCGZ5b62ORe8CGtwrgWhSkWpCXcQ3_uClTdFg6SR1KaJdlt-nhCtL4yvL8cf1m5W1HVo31RAmVu_j_hHyPnAbmPRbLjSQfaQHJUdgzAdF4bJQsDy3AAStO2j4dIPes2Vh0DkRpbFH15QDEkUFxWdLixSC6xqY23HiXU7xdbvcQtw9ELmhx6mnqxzqgezpf3LsjSwytf_aHk9NIHQEXaDNL_VeWDB3Xfepkp4NM6gkyjj26rwfewm98wq7S2TdhAdrhP3chJL6smydquZmJKQhUVhrnPjyF9rgpp7AsXNWhVQDOIgMcptopgPteiO8h2VEsOaikubf8kV_cFs5c8exnmrvBWFEBCQMY9MMaTpD-xz1bUGwHJDDg_DQLX6hCeKLV_RAo_5y5x31ymTDHfPK0HRR2vNQp6y39T4oKK3tMn8uobNFF35bZOZUtGeBq--57Gqe7RA6U4pzhZLcn3QVsienjdCWqV2v21EedfNvqVjMu2Cx2dQkTTWDYsmGpyL-NOpLWyvQuGaTvmUNYJ1rZdCtlSWaCppJhhSpub-dxhQYaiyXfpkJOCgTKNrAnwqDlXtjZ1kqEcY6kQXsF4qtA7qvCVK91yzNYRa6SbkLoSBQFqON_9B70mUsqAQu57JLrK_uX7KFnzWpa3FN34yGz1yuxjK14hWwCw1LjYaD72jhDNoQIQvB7fFvxvmGyZKNphdxOtdeKh3SALe-SE3LCxmtX2AdtKpc-TVaLKEdjm3YyRP931h9u9LcKTv_NDiFIOp6TQyj74zyawB0Nu5f-CJNLD2J3ARAZu1kvJQN6tygIkNt8_4kT9pM8suliZ3c9iO-bRzkhjFmy0lV8EhkhTTlPxLV_njZiJVDrtd_H5fC153eoFsbwjxBJmP4cvx0v4HY_Rbj3NY0hzReqMUJ5er9qEFeV8SIy8myDOm0HzaE7gNTog-eUTevyGCozVVfeydlp_qF9Rg9Svw29WzUN_6ie9nooGhUwuk1CSFB3YMbKyA-JJJxW3Be4qtjWFYnQe4LJ_kDdXBPdPc-8Ml60HCYAQYhuOnQrZnQ6zcf9dpz6Fk8qK5eERZ5VMrHoM5YTFewUQbF-ijJhaTtSjuHLXMTl0ocXrfMfoswPyf9xTVmVCVcCLVpbaX3wYBDZhqqzT9zQf7I_Hm7fZdfTXIADq9rQ_QxMF0jQqgOPBnFXv1_fKrEL1Yy76DE7Vke30dVC3emXV2kC1frnHZvWEV5OHuiOF67uRGy2kYaSrrkqZQrNHK3O9e1BtujKPo007p7URfFC8C0fQSX_yLSiJumeQfoHCZG3gfhmVUoU3aKvt63gLJGJNbXXpVTdu2Au73Mf9J1fv8lObFp_OBlcz3OYItQaSVDrI96TJ0ZOWtd1ref6663kvVpB-tPmQVd_0ef68VJF1OzS6fo0vhAyfzViaTO1Xy4Q6y8Df9Hi7V33CzBPa5lhtbOuthKgxmd4gMn__zRUdyl1AzdWx4XsbCS4e60cMIrm1ZkTaf9Dzs8gscWuFrF-pOPXXCNJaGPNkVokS9KLlF9xkdOk_gcrSRrTKWZFzSFa_kkWQuehoWJ5V9YYmOGqevXa-OpYlswYrWwoK79Lde0zpLJJ11yDuBez1Jln6f7prJtZSHd290wFGlBXkdqsCC5jKO3hnK77oty7AUiV5oomn84xu9FZvgKAAv--GlOCRCVhG0XYcV_rtg4qGkfVGMkaUwmOPw7ARmYfd7eOmIZsep0k9u9LU8ILcNzVGkfiwDhvxNFpT37Hb-mApyEJuFPaoduDjF2p6TLI1fgM",
+        "_ga": "GA1.1.1813041547.1767793817",
+        "_ga_Y7K6FLL3VV": "GS2.1.s1767796839$o2$g1$t1767796842$j57$l0$h0"
+      }
+    }
+  }
+]

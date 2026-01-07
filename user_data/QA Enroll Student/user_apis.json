@@ -249,12 +249,16 @@
     "body": {
       "semesterId": "01987e28-9461-7d7a-a3cc-e28da45789e4",
       "subjectCode": "B34_4",
+      "studentIds": [
+        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      ],
       "maxMark": 100,
       "minMark": 0
     },
     "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/StudentSubjectMark/automarkentry",
     "is_temporary": true,
     "original_name": "Auto Mark Entry",
+    "cookie_choice": "Use Environment Cookies",
     "cookies": {
       "_ga": "GA1.1.379208491.1753342019",
       "_ga_6F011EZW22": "GS2.1.s1753763920$o14$g0$t1753763920$j60$l0$h0",
