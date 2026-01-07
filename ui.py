@@ -4264,6 +4264,37 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             st.markdown("---")
             
+            # Subject Codes list input
+            st.write("**Student IDs List:**")
+            st.write("Enter Subject IDs (one per line or comma-separated)")
+            
+            student_ids_input = st.text_area(
+                "Subject IDs",
+                value="",
+                height=150,
+                key=f"student_ids_{api_name}",
+                help="Enter Subject Codes separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
+                placeholder="Enter StudentIds here...\nExample:\n3fa85f64-5717-4562-b3fc-2c963f66afa1\n3fa85f64-5717-4562-b3fc-2c963f66afa2"
+            )
+            
+            # Parse subject IDs
+            student_ids = []
+            if student_ids_input:
+                # Split by newlines and commas, then clean up
+                raw_ids = student_ids_input.replace(',', '\n').split('\n')
+                student_ids = [sid.strip() for sid in raw_ids if sid.strip()]
+            
+            # Display parsed IDs
+            if student_ids:
+                st.success(f"✅ Found {len(student_ids)} Subject Code(s)")
+                with st.expander("📋 Preview Student IDs", expanded=False):
+                    for i, sid in enumerate(student_ids, 1):
+                        st.text(f"{i}. {sid}")
+            else:
+                st.warning("⚠️ No Subject IDs entered yet")
+            
+            st.markdown("---")
+            
             # Update API body with current values
             if 'body' not in api:
                 api['body'] = {}
@@ -4274,6 +4305,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             # Store subject IDs in session state for batch processing
             st.session_state[f'batch_subject_ids_{api_name}'] = subject_ids
+            st.session_state[f'batch_student_ids_{api_name}'] = student_ids
         
         # Batch execution button
         if subject_ids and semester_id:
@@ -4300,7 +4332,7 @@ It will make 3 API calls:
                 """)
             
             if st.button("🚀 Execute Batch Processing", type="primary", key=f"batch_execute_{api_name}"):
-                _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths)
+                _handle_auto_mark_entry_batch(api_name, api, subject_ids, student_ids, file_paths)
         else:
             st.info("💡 Enter Semester ID and at least one Subject Code to enable batch processing")
     
@@ -4374,7 +4406,7 @@ It will make 3 API calls:
                 st.error(f"❌ Invalid JSON: {str(e)}")
 
 
-def _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths):
+def _handle_auto_mark_entry_batch(api_name, api, subject_ids, student_ids, file_paths):
     """Handle batch processing for Auto Mark Entry API"""
     
     total_ids = len(subject_ids)
@@ -4400,6 +4432,7 @@ def _handle_auto_mark_entry_batch(api_name, api, subject_ids, file_paths):
         batch_api = api.copy()
         batch_api['body'] = batch_api.get('body', {}).copy()
         batch_api['body']['subjectCode'] = subject_id
+        batch_api['body']['studentIds'] = student_ids
         
         try:
             # Load cookies dynamically
@@ -5033,15 +5066,22 @@ def _render_body_section(api_name, api, file_paths):
 def _render_cookies_section(api, api_name, location="main"):
     """Render the cookies configuration section"""
     cookie_options = ["Use Environment Cookies", "No Cookies", "Custom Cookies"]
+
+    # Persist cookie choice per API so it doesn't reset on rerun
+    choice_state_key = f"cookie_choice_{api_name}"
+    previous_choice = st.session_state.get(choice_state_key, api.get('cookie_choice', "Use Environment Cookies"))
+    default_index = cookie_options.index(previous_choice) if previous_choice in cookie_options else 0
+
     cookie_choice = st.selectbox(
         "Cookie Options", 
         cookie_options,
-        index=0,  # Default to "Use Environment Cookies"
-        key=f"cookie_options_selectbox_{api_name}_{location}"  # Add unique key per API and location to avoid duplicate element ID error
+        index=default_index,
+        key=f"cookie_options_selectbox_{api_name}_{location}"
     )
     
-    # Store cookie choice in session state for dynamic loading
-    st.session_state['cookie_choice'] = cookie_choice
+    # Store cookie choice in session state and API config
+    st.session_state[choice_state_key] = cookie_choice
+    api['cookie_choice'] = cookie_choice
 
     if cookie_choice == "Use Environment Cookies":
         # Get user's cookies for current environment
