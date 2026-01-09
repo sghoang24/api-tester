@@ -261,5 +261,21 @@
       "maxMark": 100,
       "minMark": 0
     }
+  },
+  "Update GradingScheme": {
+    "path": "/SubjectAssessmentSetting/BulkAssessmentGradingSchemeChange",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ids": [],
+      "subjectCodes": [
+        "string"
+      ],
+      "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
+      "gradingSchemeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
   }
 }
