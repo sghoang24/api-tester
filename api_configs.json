@@ -30,9 +30,7 @@
       "studentSize": 20,
       "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "courseCode": "string",
-      "subjectCodes": [
-        "string"
-      ]
+      "subjectCodes": ["string"]
     }
   },
   "Add Real Student": {
@@ -62,9 +60,7 @@
     "body": {
       "semesterId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "courseCode": "string",
-      "studentIds": [
-        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-      ]
+      "studentIds": ["3fa85f64-5717-4562-b3fc-2c963f66afa6"]
     }
   },
   "Add Real Student to Subject Info": {
@@ -192,9 +188,7 @@
           "semesterId": "0197ab9b-05c5-7ccb-9888-5876b6c1a34e"
         }
       ],
-      "studentIds": [
-        "0197e904-3ed3-746c-9966-297d50a0b7fd"
-      ],
+      "studentIds": ["0197e904-3ed3-746c-9966-297d50a0b7fd"],
       "numberOfRandom": 10,
       "topX": 20
     }
@@ -240,9 +234,7 @@
     "body": {
       "semesterId": "01987e28-9461-7d7a-a3cc-e28da45789e4",
       "subjectCode": "B34_4",
-      "studentIds": [
-        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-      ],
+      "studentIds": ["3fa85f64-5717-4562-b3fc-2c963f66afa6"],
       "maxMark": 100,
       "minMark": 0
     }
@@ -271,11 +263,25 @@
     },
     "body": {
       "ids": [],
-      "subjectCodes": [
-        "string"
-      ],
+      "subjectCodes": ["string"],
       "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
       "gradingSchemeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
+  },
+  "Enroll Fake Student": {
+    "path": "/AssessmentStudentInfo/DEVEnrollFake",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
+      "courseCode": "string",
+      "subjectCodes": [],
+      "numberOfStudents": 10,
+      "studyStage": 1,
+      "tcu": 0
     }
   }
 }
