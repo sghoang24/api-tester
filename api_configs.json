@@ -283,5 +283,17 @@
       "studyStage": 1,
       "tcu": 0
     }
+  },
+  "Remove Fake Student": {
+    "path": "/AssessmentStudentInfo/DEVRemoveFake",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
+      "courseCode": "string"
+    }
   }
 }
