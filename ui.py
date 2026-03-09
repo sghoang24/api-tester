@@ -4166,8 +4166,8 @@ def _update_batch_mark_values(api_name, api, max_mark_value, min_mark_value):
     if 'body' not in api:
         api['body'] = {}
     
-    api['body']['maxMark'] = int(max_mark_value)
-    api['body']['minMark'] = int(min_mark_value)
+    api['body']['maxMark'] = max_mark_value
+    api['body']['minMark'] = min_mark_value
     
     # Save to user data for persistence
     _save_current_user_data()
@@ -4300,8 +4300,8 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 api['body'] = {}
             
             api['body']['semesterId'] = semester_id
-            api['body']['maxMark'] = int(max_mark)
-            api['body']['minMark'] = int(min_mark)
+            api['body']['maxMark'] = max_mark
+            api['body']['minMark'] = min_mark
             
             # Store subject IDs in session state for batch processing
             st.session_state[f'batch_subject_ids_{api_name}'] = subject_ids
