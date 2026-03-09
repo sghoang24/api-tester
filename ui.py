@@ -4214,7 +4214,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     "Max Mark",
                     min_value=0.0,
                     max_value=100.0,
-                    value=st.session_state[f"max_mark_value_{api_name}"],
+                    value=float(st.session_state[f"max_mark_value_{api_name}"]),
                     key=f"max_mark_{api_name}",
                     help="Maximum mark value",
                     on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
@@ -4225,7 +4225,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     "Min Mark",
                     min_value=0.0,
                     max_value=100.0,
-                    value=st.session_state[f"min_mark_value_{api_name}"],
+                    value=float(st.session_state[f"min_mark_value_{api_name}"]),
                     key=f"min_mark_{api_name}",
                     help="Minimum mark value",
                     on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
