@@ -4212,8 +4212,8 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             with col1:
                 max_mark = st.number_input(
                     "Max Mark",
-                    min_value=0,
-                    max_value=100,
+                    min_value=0.0,
+                    max_value=100.0,
                     value=st.session_state[f"max_mark_value_{api_name}"],
                     key=f"max_mark_{api_name}",
                     help="Maximum mark value",
@@ -4223,8 +4223,8 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             with col2:
                 min_mark = st.number_input(
                     "Min Mark",
-                    min_value=0,
-                    max_value=100,
+                    min_value=0.0,
+                    max_value=100.0,
                     value=st.session_state[f"min_mark_value_{api_name}"],
                     key=f"min_mark_{api_name}",
                     help="Minimum mark value",
