@@ -5,6 +5,7 @@ import pandas as pd
 import time
 import os
 import datetime
+import io
 from utils import (
     get_current_base_url, 
     get_user_specific_paths,
@@ -35,6 +36,154 @@ ADMIN_COOKIES_FILE = os.path.join(os.path.dirname(__file__), "admin_cookies_conf
 
 # Global API configurations file
 API_CONFIGS_FILE = os.path.join(os.path.dirname(__file__), "api_configs.json")
+
+
+# Helpers for Processing Result Statistic analysis and export
+fail_criteria = {
+    "None": 0,
+    "SemesterRank": 1,
+    "GraduationRule": 2,
+    "IsNotPET": 3,
+    "MinCourseDuration": 4,
+    "MinSemRank": 5,
+    "MaxSemRank": 6,
+    "Lack TPF": 7,
+    "Lack DipC": 8,
+    "Lack DipO": 9,
+    "Lack DipE": 10,
+    "Lack TPE": 11,
+    "Lack CDS": 12,
+}
+
+
+def _build_assessment_lookup(settings_list):
+    """Map (subjectId, semesterId) -> assessment metadata"""
+    lookup = {}
+    for s in settings_list:
+        key = (s.get("subjectId"), s.get("semesterId"))
+        lookup[key] = {
+            "CreditUnit": s.get("creditUnit"),
+            "IsGraded": s.get("isGraded"),
+            "SubjectCategory": s.get("subjectCategory"),
+            "DiplomaCategory": s.get("diplomaCategory"),
+        }
+    return lookup
+
+
+def analyze_processing_result(content: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Analyze ProcessingResult/statistic response into two DataFrames (marks, summary)
+
+    Expects response structure where studentStatistics are under content['data'][0]['studentStatistics']
+    """
+    mark_rows = []
+    summary_rows = []
+
+    data = content.get("data")
+    student_statistics = []
+    if data and isinstance(data, list) and len(data) > 0:
+        student_statistics = data[0].get("studentStatistics", [])
+
+    for stu in student_statistics:
+        course_code = stu.get("courseCode", "")
+        course_name = stu.get("courseName", "")
+        semester_name = stu.get("semesterName", "")
+        student_fail_criteria = stu.get("failedCriteria", {})
+        student_fail_items = student_fail_criteria.get("failedItems", [])
+        fail_dict = {item.get("failCriteria"): item.get("value") for item in student_fail_items}
+
+        summary_rows.append(
+            {
+                "CourseCode": course_code,
+                "CourseName": course_name,
+                "SemesterName": semester_name,
+                "StudentId": stu.get("studentId"),
+                "StudentName": stu.get("studentName"),
+                "AdmissionNumber": stu.get("admissionNumber"),
+                "CourseVersion": stu.get("courseVersion"),
+                "StudentStatus": stu.get("studentStatus"),
+                "FutureStudentStatus": stu.get("futureStudentStatus"),
+                "StudentClassification": stu.get("studentClassification"),
+                "SemesterRank": stu.get("semesterRank"),
+                "StageOfStudy": stu.get("stageOfStudy"),
+                "GPA": stu.get("gpa"),
+                "CGPA": stu.get("cgpa"),
+                "WA": stu.get("wa"),
+                "CWA": stu.get("cwa"),
+                "CU": stu.get("cu"),
+                "TCU": stu.get("tcu"),
+                "ComputedAcadStanding": stu.get("computedAcadStanding"),
+                "AdjustAcadStanding": stu.get("adjustAcadStanding"),
+                "AcadStandingReason": stu.get("acadStandingReason"),
+                "Lack TPF": fail_dict.get(fail_criteria["Lack TPF"], 0) if isinstance(fail_criteria["Lack TPF"], int) else fail_dict.get(fail_criteria["Lack TPF"], 0),
+                "Lack DipC": fail_dict.get(fail_criteria["Lack DipC"], 0) if isinstance(fail_criteria["Lack DipC"], int) else fail_dict.get(fail_criteria["Lack DipC"], 0),
+                "Lack DipO": fail_dict.get(fail_criteria["Lack DipO"], 0) if isinstance(fail_criteria["Lack DipO"], int) else fail_dict.get(fail_criteria["Lack DipO"], 0),
+                "Lack DipE": fail_dict.get(fail_criteria["Lack DipE"], 0) if isinstance(fail_criteria["Lack DipE"], int) else fail_dict.get(fail_criteria["Lack DipE"], 0),
+                "Lack TPE": fail_dict.get(fail_criteria["Lack TPE"], 0) if isinstance(fail_criteria["Lack TPE"], int) else fail_dict.get(fail_criteria["Lack TPE"], 0),
+                "Lack CDS": fail_dict.get(fail_criteria["Lack CDS"], 0) if isinstance(fail_criteria["Lack CDS"], int) else fail_dict.get(fail_criteria["Lack CDS"], 0),
+            }
+        )
+
+        assess_lookup = _build_assessment_lookup(
+            stu.get("cummulativeAssessmentSettings", []) + stu.get("currentAssessmentSettings", [])
+        )
+
+        all_marks = {}
+        for m in stu.get("cummulativeSubjectMarks", []):
+            all_marks[m.get("id")] = m
+        for m in stu.get("currentSubjectMarks", []):
+            all_marks[m.get("id")] = m
+
+        for m in all_marks.values():
+            assess = assess_lookup.get((m.get("subjectId"), m.get("semesterId")), {})
+            mark_rows.append(
+                {
+                    "CourseCode": course_code,
+                    "CourseName": course_name,
+                    "StudentId": stu.get("studentId"),
+                    "StudentName": stu.get("studentName"),
+                    "AdmissionNumber": stu.get("admissionNumber"),
+                    "CourseVersion": stu.get("courseVersion"),
+                    "SubjectCode": m.get("subjectCode"),
+                    "SubjectId": m.get("subjectId"),
+                    "SemesterId": m.get("semesterId"),
+                    "FinalSubjectMark": m.get("finalSubjectMark"),
+                    "FinalSubjectGrade": m.get("finalSubjectGrade"),
+                    "SpecialGrade": m.get("specialGrade"),
+                    "NgpPenalty": m.get("ngpPenalty"),
+                    "ByPassSubjectType": m.get("byPassSubjectType"),
+                    "ContributedComponentPercentage": m.get("contributedComponentPercentage"),
+                    "AttemptNumber": m.get("attemptNumber"),
+                    "CreditUnit": assess.get("CreditUnit", ""),
+                    "IsGraded": assess.get("IsGraded", ""),
+                    "SubjectCategory": assess.get("SubjectCategory", ""),
+                    "DiplomaCategory": assess.get("DiplomaCategory", ""),
+                    "Lack TPF": fail_dict.get(fail_criteria["Lack TPF"], 0) if isinstance(fail_criteria["Lack TPF"], int) else fail_dict.get(fail_criteria["Lack TPF"], 0),
+                    "Lack DipC": fail_dict.get(fail_criteria["Lack DipC"], 0) if isinstance(fail_criteria["Lack DipC"], int) else fail_dict.get(fail_criteria["Lack DipC"], 0),
+                    "Lack DipO": fail_dict.get(fail_criteria["Lack DipO"], 0) if isinstance(fail_criteria["Lack DipO"], int) else fail_dict.get(fail_criteria["Lack DipO"], 0),
+                    "Lack DipE": fail_dict.get(fail_criteria["Lack DipE"], 0) if isinstance(fail_criteria["Lack DipE"], int) else fail_dict.get(fail_criteria["Lack DipE"], 0),
+                    "Lack TPE": fail_dict.get(fail_criteria["Lack TPE"], 0) if isinstance(fail_criteria["Lack TPE"], int) else fail_dict.get(fail_criteria["Lack TPE"], 0),
+                    "Lack CDS": fail_dict.get(fail_criteria["Lack CDS"], 0) if isinstance(fail_criteria["Lack CDS"], int) else fail_dict.get(fail_criteria["Lack CDS"], 0),
+                }
+            )
+
+    df_marks = pd.DataFrame(mark_rows)
+    df_summary = pd.DataFrame(summary_rows)
+
+    if not df_marks.empty:
+        df_marks.sort_values(by=["StudentName", "SubjectCode"], inplace=True, ignore_index=True)
+
+    return df_marks, df_summary
+
+
+def export_dfs_to_excel_bytes(df_marks: pd.DataFrame, df_summary: pd.DataFrame) -> bytes:
+    """Write two DataFrames to an Excel file in memory and return bytes."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_marks.to_excel(writer, sheet_name="Subject Marks", index=False)
+        df_summary.to_excel(writer, sheet_name="Student Summary", index=False)
+    output.seek(0)
+    return output.read()
+
 
 
 def load_help_content():
@@ -5280,6 +5429,50 @@ def _handle_send_button(api_name, api, file_paths):
 
             # Display success message
             st.success(f"Request completed in {st.session_state.api_responses[api_name]['time']} ms")
+
+            # Special handling: Processing Result Statistic -> analyze and offer Excel download
+            is_stat_api = False
+            try:
+                url_lower = api.get('url', '')
+                path_lower = api.get('url_path', api.get('path', ''))
+                if url_lower and "/ProcessingResult/statistic" in url_lower:
+                    is_stat_api = True
+                if path_lower and "ProcessingResult/statistic" in path_lower:
+                    is_stat_api = True
+                if "Processing Result Statistic" in str(api_name):
+                    is_stat_api = True
+            except Exception:
+                is_stat_api = False
+
+            if is_stat_api:
+                # Parse JSON content
+                try:
+                    resp_json = response.json()
+                except Exception:
+                    try:
+                        resp_text = get_response_content(response)
+                        resp_json = json.loads(resp_text) if isinstance(resp_text, str) else resp_text
+                    except Exception:
+                        resp_json = None
+
+                if resp_json is not None:
+                    try:
+                        df_marks, df_summary = analyze_processing_result(resp_json)
+                        excel_bytes = export_dfs_to_excel_bytes(df_marks, df_summary)
+                        # Use courseCode from API body instead of username
+                        course_code = api.get('body', {}).get('courseCode', 'unknown_course')
+                        fname = f"statistic_{course_code}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                        st.success(f"Analysis ready — {len(df_marks)} mark rows and {len(df_summary)} student rows")
+                        st.download_button("Download Statistic Excel", data=excel_bytes, file_name=fname, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        with st.expander("Preview - Student Summary", expanded=False):
+                            st.dataframe(df_summary.head(200))
+                        with st.expander("Preview - Subject Marks", expanded=False):
+                            st.dataframe(df_marks.head(500))
+                    except Exception as e:
+                        st.error(f"Failed to generate analysis: {e}")
+
+                # Do not force a rerun here so the user can download the file
+                return
 
             # Rerun the app to update the history in the sidebar
             st.rerun()
