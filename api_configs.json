@@ -295,5 +295,19 @@
       "semesterId": "b6b82503-ffc7-5183-9044-e1f6434c37aa",
       "courseCode": "string"
     }
+  },
+  "Processing Result Statistic": {
+    "url_path": "/ProcessingResult/statistic",
+    "method": "POST",
+    "module": "EX",
+    "headers": {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "params": {},
+    "body": {
+      "courseCode": "A0D",
+      "admissionNumbers": ["ADM001", "ADM002"]
+    }
   }
 }
