@@ -146,7 +146,7 @@ def analyze_processing_result(content: dict) -> tuple[pd.DataFrame, pd.DataFrame
                     "SubjectCode": m.get("subjectCode"),
                     "SubjectId": m.get("subjectId"),
                     "SemesterId": m.get("semesterId"),
-                    "FinalSubjectMark": m.get("finalSubjectMark"),
+                    "SubjectComputedMark": m.get("subjectComputedMark"),
                     "FinalSubjectGrade": m.get("finalSubjectGrade"),
                     "SpecialGrade": m.get("specialGrade"),
                     "NgpPenalty": m.get("ngpPenalty"),
