@@ -39,8 +39,7 @@
       "studentIds": [
         "3fa85f64-5717-4562-b3fc-2c963f66afa6"
       ],
-      "maxMark": 100,
-      "minMark": 0
+      "fixedMark": 70.0
     },
     "url": "https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/StudentSubjectMark/automarkentry",
     "is_temporary": true,
