@@ -4364,14 +4364,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 help="The semester ID for all subject entries"
             )
             
-            # Mark mode selection (Fixed Mark vs Random Mark)
-            mark_mode = st.radio(
-                "Mark Mode",
-                ["Fixed Mark", "Random Mark"],
-                index=0,
-                key=f"mark_mode_{api_name}",
-                help="Choose Fixed mark for all entries or Random Mark with max/min range."
-            )
+            current_env = st.session_state.get('current_env', 'SIT')
 
             # Initialize session state for value defaults
             if f"fixed_mark_value_{api_name}" not in st.session_state:
@@ -4382,6 +4375,18 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 st.session_state[f"min_mark_value_{api_name}"] = api.get('body', {}).get('minMark', 0)
 
             col1, col2 = st.columns(2)
+
+            if current_env == 'SIT':
+                # Mark mode selection (Fixed Mark vs Random Mark)
+                mark_mode = st.radio(
+                    "Mark Mode",
+                    ["Fixed Mark", "Random Mark"],
+                    index=0,
+                    key=f"mark_mode_{api_name}",
+                    help="Choose Fixed mark for all entries or Random Mark with max/min range."
+                )
+            else:
+                mark_mode = "Random Mark"
 
             if mark_mode == "Fixed Mark":
                 with col1:
