@@ -4317,8 +4317,23 @@ def _update_batch_mark_values(api_name, api, max_mark_value, min_mark_value):
     
     api['body']['maxMark'] = max_mark_value
     api['body']['minMark'] = min_mark_value
+    api['body'].pop('fixedMark', None)
     
     # Save to user data for persistence
+    _save_current_user_data()
+
+
+def _update_batch_fixed_mark_value(api_name, api, fixed_mark_value):
+    """Update batch processing fixed mark value in session state and API body"""
+    st.session_state[f"fixed_mark_value_{api_name}"] = fixed_mark_value
+
+    if 'body' not in api:
+        api['body'] = {}
+
+    api['body']['fixedMark'] = fixed_mark_value
+    api['body'].pop('maxMark', 0)
+    api['body'].pop('minMark', 0)
+
     _save_current_user_data()
 
 
@@ -4349,37 +4364,80 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 help="The semester ID for all subject entries"
             )
             
-            # Max Mark input
-            col1, col2 = st.columns(2)
-            
-            # Initialize session state for auto-save if not exists
+            # Mark mode selection (Fixed Mark vs Random Mark)
+            mark_mode = st.radio(
+                "Mark Mode",
+                ["Fixed Mark", "Random Mark"],
+                index=0,
+                key=f"mark_mode_{api_name}",
+                help="Choose Fixed mark for all entries or Random Mark with max/min range."
+            )
+
+            # Initialize session state for value defaults
+            if f"fixed_mark_value_{api_name}" not in st.session_state:
+                st.session_state[f"fixed_mark_value_{api_name}"] = api.get('body', {}).get('fixedMark', 50)
             if f"max_mark_value_{api_name}" not in st.session_state:
                 st.session_state[f"max_mark_value_{api_name}"] = api.get('body', {}).get('maxMark', 100)
             if f"min_mark_value_{api_name}" not in st.session_state:
                 st.session_state[f"min_mark_value_{api_name}"] = api.get('body', {}).get('minMark', 0)
-            
-            with col1:
-                max_mark = st.number_input(
-                    "Max Mark",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=float(st.session_state[f"max_mark_value_{api_name}"]),
-                    key=f"max_mark_{api_name}",
-                    help="Maximum mark value",
-                    on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
-                )
-            
-            with col2:
-                min_mark = st.number_input(
-                    "Min Mark",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=float(st.session_state[f"min_mark_value_{api_name}"]),
-                    key=f"min_mark_{api_name}",
-                    help="Minimum mark value",
-                    on_change=lambda: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
-                )
-            
+
+            col1, col2 = st.columns(2)
+
+            if mark_mode == "Fixed Mark":
+                with col1:
+                    fixed_mark = st.number_input(
+                        "Fixed Mark",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=float(st.session_state[f"fixed_mark_value_{api_name}"]),
+                        key=f"fixed_mark_{api_name}",
+                        help="Set one fixed mark value for all batch entries.",
+                        on_change=lambda api_name=api_name, api=api: _update_batch_fixed_mark_value(api_name, api, st.session_state[f"fixed_mark_{api_name}"])
+                    )
+
+                with col2:
+                    st.write("")
+
+                # Keep rate values in body for fixed mode
+                if 'body' not in api:
+                    api['body'] = {}
+                api['body']['fixedMark'] = st.session_state[f"fixed_mark_{api_name}"]
+                api['body'].pop('maxMark', None)
+                api['body'].pop('minMark', None)
+                st.session_state[f"fixed_mark_value_{api_name}"] = st.session_state[f"fixed_mark_{api_name}"]
+
+            else:  # Random Mark mode
+                with col1:
+                    max_mark = st.number_input(
+                        "Max Mark",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=float(st.session_state[f"max_mark_value_{api_name}"]),
+                        key=f"max_mark_{api_name}",
+                        help="Maximum mark value",
+                        on_change=lambda api_name=api_name, api=api: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
+                    )
+
+                with col2:
+                    min_mark = st.number_input(
+                        "Min Mark",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=float(st.session_state[f"min_mark_value_{api_name}"]),
+                        key=f"min_mark_{api_name}",
+                        help="Minimum mark value",
+                        on_change=lambda api_name=api_name, api=api: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
+                    )
+
+                # Keep rate values in body for random mode
+                if 'body' not in api:
+                    api['body'] = {}
+                api['body']['maxMark'] = st.session_state[f"max_mark_{api_name}"]
+                api['body']['minMark'] = st.session_state[f"min_mark_{api_name}"]
+                api['body'].pop('fixedMark', None)
+                st.session_state[f"max_mark_value_{api_name}"] = st.session_state[f"max_mark_{api_name}"]
+                st.session_state[f"min_mark_value_{api_name}"] = st.session_state[f"min_mark_{api_name}"]
+
             st.markdown("---")
             
             # Subject Codes list input
@@ -4447,11 +4505,19 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             # Update API body with current values
             if 'body' not in api:
                 api['body'] = {}
-            
+
             api['body']['semesterId'] = semester_id
-            api['body']['maxMark'] = max_mark
-            api['body']['minMark'] = min_mark
-            
+
+            if st.session_state.get(f"mark_mode_{api_name}", "Fixed Mark") == "Fixed Mark":
+                fixed_value = st.session_state.get(f"fixed_mark_{api_name}", st.session_state.get(f"fixed_mark_value_{api_name}", 50))
+                api['body']['fixedMark'] = fixed_value
+                api['body'].pop('maxMark', None)
+                api['body'].pop('minMark', None)
+            else:
+                api['body']['maxMark'] = st.session_state.get(f"max_mark_{api_name}", st.session_state.get(f"max_mark_value_{api_name}", 100))
+                api['body']['minMark'] = st.session_state.get(f"min_mark_{api_name}", st.session_state.get(f"min_mark_value_{api_name}", 0))
+                api['body'].pop('fixedMark', None)
+
             # Store subject IDs in session state for batch processing
             st.session_state[f'batch_subject_ids_{api_name}'] = subject_ids
             st.session_state[f'batch_student_ids_{api_name}'] = student_ids
@@ -4466,7 +4532,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 st.write("1. 📋 Takes your list of Subject IDs")
                 st.write("2. 🔁 Loops through each Subject ID one by one")
                 st.write("3. 📞 Calls the Auto Mark Entry API for each Subject ID")
-                st.write("4. ✅ Uses the same Semester ID, Max Mark, and Min Mark for all calls")
+                st.write("4. ✅ Uses the same Semester ID and mark mode for all calls (Fixed Mark or Random Mark)")
                 st.write("5. 📊 Shows progress and results in real-time")
                 st.write("")
                 st.write("**Example:**")
