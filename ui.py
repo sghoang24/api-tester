@@ -73,15 +73,33 @@ def _build_assessment_lookup(settings_list):
 def analyze_processing_result(content: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Analyze ProcessingResult/statistic response into two DataFrames (marks, summary)
 
-    Expects response structure where studentStatistics are under content['data'][0]['studentStatistics']
+    Handles different response structures across environments.
+    Tries multiple possible paths for studentStatistics.
     """
     mark_rows = []
     summary_rows = []
 
-    data = content.get("data")
     student_statistics = []
+
+    # Try different possible structures
+    # First, try SIT structure: content['data'][0]['studentStatistics']
+    data = content.get("data")
     if data and isinstance(data, list) and len(data) > 0:
         student_statistics = data[0].get("studentStatistics", [])
+
+    # If not found, try direct under content: content['studentStatistics']
+    if not student_statistics:
+        student_statistics = content.get("studentStatistics", [])
+
+    # If still not found, try under data as dict: content['data']['studentStatistics']
+    if not student_statistics and data and isinstance(data, dict):
+        student_statistics = data.get("studentStatistics", [])
+
+    # If still not found, try nested data: content['data'][0]['data']['studentStatistics'] or similar
+    if not student_statistics and data and isinstance(data, list) and len(data) > 0:
+        inner_data = data[0].get("data")
+        if inner_data and isinstance(inner_data, dict):
+            student_statistics = inner_data.get("studentStatistics", [])
 
     for stu in student_statistics:
         course_code = stu.get("courseCode", "")
@@ -5142,73 +5160,81 @@ def _render_body_section(api_name, api, file_paths):
         ("DEVAllocateStudent" in api.get('url_path', ''))
     ):
         _render_excel_upload_section_allocate_student(api_name, api, file_paths)
-    elif is_priority_account and is_demo_env:
-        # Simplified UI for QA/BA users in DEMO environment
-        with st.expander("Request Body", expanded=True):
-            # Initialize body if not exist
-            if 'body' not in api:
-                api['body'] = {"courses": [{"courseId": "", "semesterId": ""}], "numberOfRandom": 10, "topX": 20}
+    # elif is_priority_account and is_demo_env:
+    #     # Simplified UI for QA/BA users in DEMO environment
+    #     with st.expander("Request Body", expanded=True):
+    #         # Initialize body if not exist
+    #         if 'body' not in api:
+    #             api['body'] = {"courses": [{"courseId": "", "semesterId": ""}], "numberOfRandom": 10, "topX": 20}
             
-            # Ensure proper structure exists
-            if not isinstance(api['body'], dict):
-                api['body'] = {}
-            if "courses" not in api['body'] or not isinstance(api['body']["courses"], list) or len(api['body']["courses"]) == 0:
-                api['body']["courses"] = [{"courseId": "", "semesterId": ""}]
-            if "numberOfRandom" not in api['body']:
-                api['body']["numberOfRandom"] = 10
-            if "topX" not in api['body']:
-                api['body']["topX"] = 20
+    #         # Ensure proper structure exists
+    #         if not isinstance(api['body'], dict):
+    #             api['body'] = {}
+    #         if "courses" not in api['body'] or not isinstance(api['body']["courses"], list) or len(api['body']["courses"]) == 0:
+    #             api['body']["courses"] = [{"courseId": "", "semesterId": ""}]
+    #         if "numberOfRandom" not in api['body']:
+    #             api['body']["numberOfRandom"] = 10
+    #         if "topX" not in api['body']:
+    #             api['body']["topX"] = 20
                 
-            # Extract current values
-            courseId = api['body']["courses"][0].get("courseId", "")
-            semesterId = api['body']["courses"][0].get("semesterId", "")
+    #         # Extract current values
+    #         courseId = api['body']["courses"][0].get("courseId", "")
+    #         semesterId = api['body']["courses"][0].get("semesterId", "")
             
-            # Keep track of original values to detect changes
-            # Use API-specific keys to avoid conflicts when switching between APIs
-            courseId_key = f"original_courseId_{api_name}"
-            semesterId_key = f"original_semesterId_{api_name}"
+    #         # Keep track of original values to detect changes
+    #         # Use API-specific keys to avoid conflicts when switching between APIs
+    #         courseId_key = f"original_courseId_{api_name}"
+    #         semesterId_key = f"original_semesterId_{api_name}"
             
-            if courseId_key not in st.session_state:
-                st.session_state[courseId_key] = courseId
-            if semesterId_key not in st.session_state:
-                st.session_state[semesterId_key] = semesterId
+    #         if courseId_key not in st.session_state:
+    #             st.session_state[courseId_key] = courseId
+    #         if semesterId_key not in st.session_state:
+    #             st.session_state[semesterId_key] = semesterId
             
-            # Simple input fields for CourseId and SemesterId
-            col1, col2 = st.columns(2)
-            with col1:
-                new_courseId = st.text_input("Course ID", value=courseId, key=f"courseId_{api_name}")
-            with col2:
-                new_semesterId = st.text_input("Semester ID", value=semesterId, key=f"semesterId_{api_name}")
+    #         # Simple input fields for CourseId and SemesterId
+    #         col1, col2 = st.columns(2)
+    #         with col1:
+    #             new_courseId = st.text_input("Course ID", value=courseId, key=f"courseId_{api_name}")
+    #         with col2:
+    #             new_semesterId = st.text_input("Semester ID", value=semesterId, key=f"semesterId_{api_name}")
             
-            # Update the body with new values
-            api['body']["courses"][0]["courseId"] = new_courseId
-            api['body']["courses"][0]["semesterId"] = new_semesterId
+    #         # Update the body with new values
+    #         api['body']["courses"][0]["courseId"] = new_courseId
+    #         api['body']["courses"][0]["semesterId"] = new_semesterId
             
-            # Auto-save if values have changed
-            courseId_key = f"original_courseId_{api_name}"
-            semesterId_key = f"original_semesterId_{api_name}"
+    #         # Auto-save if values have changed
+    #         courseId_key = f"original_courseId_{api_name}"
+    #         semesterId_key = f"original_semesterId_{api_name}"
             
-            if (new_courseId != st.session_state[courseId_key] or 
-                new_semesterId != st.session_state[semesterId_key]):
-                # Only update current user data in memory (no file save)
-                _save_current_user_data()  # Update the logged_in_users dict
+    #         if (new_courseId != st.session_state[courseId_key] or 
+    #             new_semesterId != st.session_state[semesterId_key]):
+    #             # Only update current user data in memory (no file save)
+    #             _save_current_user_data()  # Update the logged_in_users dict
                 
-                # Update original values after saving
-                st.session_state[courseId_key] = new_courseId
-                st.session_state[semesterId_key] = new_semesterId
+    #             # Update original values after saving
+    #             st.session_state[courseId_key] = new_courseId
+    #             st.session_state[semesterId_key] = new_semesterId
                 
-                # Show a subtle feedback that changes are tracked
-                # st.success("Changes tracked in memory")
-                st.rerun()  # Refresh UI after auto-save
+    #             # Show a subtle feedback that changes are tracked
+    #             # st.success("Changes tracked in memory")
+    #             st.rerun()  # Refresh UI after auto-save
             
-            # Display the JSON for reference (read-only)
-            st.code(json.dumps(api['body'], indent=2), language="json")
+    #         # Display the JSON for reference (read-only)
+    #         st.code(json.dumps(api['body'], indent=2), language="json")
     else:
         # Enhanced JSON editor for all other users
         with st.expander("Request Body", expanded=True):
             # Show as JSON editor with better formatting
             if 'body' not in api:
                 api['body'] = {}
+            
+            # Adjust body based on environment for non-SIT environments (only for statistic API)
+            current_env = st.session_state.current_env
+            if current_env != "SIT" and ("statistic" in api_name.lower() or "ProcessingResult" in api.get('path', '')):
+                if 'courseCode' in api['body'] and api['body']['courseCode'] == "A0D":
+                    api['body']['courseCode'] = ""  # Reset to empty for non-SIT
+                if 'admissionNumbers' in api['body'] and not api['body']['admissionNumbers']:
+                    api['body']['admissionNumbers'] = ["ADM001", "ADM002"]  # Set default if empty
                 
             # Keep track of original JSON to detect changes
             original_json = json.dumps(api['body'], indent=2, ensure_ascii=False)
