@@ -4421,13 +4421,13 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 with col2:
                     st.write("")
 
-                # Keep rate values in body for fixed mode
+                # Keep rate values in body for fixed mode - use the actual input value directly
                 if 'body' not in api:
                     api['body'] = {}
-                api['body']['fixedMark'] = st.session_state[f"fixed_mark_{api_name}"]
+                api['body']['fixedMark'] = fixed_mark
                 api['body'].pop('maxMark', None)
                 api['body'].pop('minMark', None)
-                st.session_state[f"fixed_mark_value_{api_name}"] = st.session_state[f"fixed_mark_{api_name}"]
+                st.session_state[f"fixed_mark_value_{api_name}"] = fixed_mark
 
             else:  # Random Mark mode
                 with col1:
@@ -4452,14 +4452,14 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                         on_change=lambda api_name=api_name, api=api: _update_batch_mark_values(api_name, api, st.session_state[f"max_mark_{api_name}"], st.session_state[f"min_mark_{api_name}"])
                     )
 
-                # Keep rate values in body for random mode
+                # Keep rate values in body for random mode - use the actual input values, not defaults
                 if 'body' not in api:
                     api['body'] = {}
-                api['body']['maxMark'] = st.session_state[f"max_mark_{api_name}"]
-                api['body']['minMark'] = st.session_state[f"min_mark_{api_name}"]
+                api['body']['maxMark'] = max_mark
+                api['body']['minMark'] = min_mark
                 api['body'].pop('fixedMark', None)
-                st.session_state[f"max_mark_value_{api_name}"] = st.session_state[f"max_mark_{api_name}"]
-                st.session_state[f"min_mark_value_{api_name}"] = st.session_state[f"min_mark_{api_name}"]
+                st.session_state[f"max_mark_value_{api_name}"] = max_mark
+                st.session_state[f"min_mark_value_{api_name}"] = min_mark
 
             st.markdown("---")
             
@@ -4516,7 +4516,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             
             # Display parsed IDs
             if student_ids:
-                st.success(f"✅ Found {len(student_ids)} Subject Code(s)")
+                st.success(f"✅ Found {len(student_ids)} Student ID(s)")
                 with st.expander("📋 Preview Student IDs", expanded=False):
                     for i, sid in enumerate(student_ids, 1):
                         st.text(f"{i}. {sid}")
@@ -4531,15 +4531,13 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
 
             api['body']['semesterId'] = semester_id
 
+            # Use the actual input values from the form, not session state fallbacks
             if st.session_state.get(f"mark_mode_{api_name}", "Fixed Mark") == "Fixed Mark":
-                fixed_value = st.session_state.get(f"fixed_mark_{api_name}", st.session_state.get(f"fixed_mark_value_{api_name}", 50))
-                api['body']['fixedMark'] = fixed_value
-                api['body'].pop('maxMark', None)
-                api['body'].pop('minMark', None)
+                # fixedMark is already set above in the Fixed Mark section
+                pass
             else:
-                api['body']['maxMark'] = st.session_state.get(f"max_mark_{api_name}", st.session_state.get(f"max_mark_value_{api_name}", 100))
-                api['body']['minMark'] = st.session_state.get(f"min_mark_{api_name}", st.session_state.get(f"min_mark_value_{api_name}", 0))
-                api['body'].pop('fixedMark', None)
+                # maxMark and minMark are already set above in the Random Mark section
+                pass
 
             # Store subject IDs in session state for batch processing
             st.session_state[f'batch_subject_ids_{api_name}'] = subject_ids
