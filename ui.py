@@ -2226,21 +2226,20 @@ def manage_cookies(file_path):
         # Save button for admin
         if st.button("Save Global Cookies"):
             admin_cookies[st.session_state.current_env] = cookies_string
-            print(f"[DEBUG] Admin saving cookies for {st.session_state.current_env}: {cookies_string}")
-            print(f"[DEBUG] Saving to file: {ADMIN_COOKIES_FILE}")
+
             
             if save_cookies_config(admin_cookies, ADMIN_COOKIES_FILE):
-                print(f"[DEBUG] Successfully saved to {ADMIN_COOKIES_FILE}")
+
                 st.success(f"Global cookies for {st.session_state.current_env} saved successfully!")
                 
                 # Update admin's session state to reflect the saved cookies
                 st.session_state.cookies_config[st.session_state.current_env] = cookies_string
-                print(f"[DEBUG] Updated admin session state cookies")
+
                 
                 # Update admin's user data as well
                 if st.session_state.active_user in st.session_state.logged_in_users:
                     st.session_state.logged_in_users[st.session_state.active_user]['cookies_config'][st.session_state.current_env] = cookies_string
-                    print(f"[DEBUG] Updated admin user data cookies")
+
                 
                 # Clear all users' cookies for this environment so they use admin cookies by default
                 for username in st.session_state.logged_in_users:
@@ -2252,12 +2251,12 @@ def manage_cookies(file_path):
                         # Save user's updated cookies config to file
                         user_cookies_file = user_data['file_paths']["COOKIES_CONFIG_FILE"]
                         save_cookies_config(user_data['cookies_config'], user_cookies_file)
-                        print(f"[DEBUG] Cleared cookies for user: {username}")
+    
                 
                 st.info("All users' cookies have been cleared to use the new global cookies.")
                 st.rerun()  # Refresh the UI to show updated values
             else:
-                print(f"[DEBUG] Failed to save to {ADMIN_COOKIES_FILE}")
+
                 st.error("Failed to save global cookies")
         
         # Reset to defaults button for admin
@@ -4335,7 +4334,7 @@ def _update_batch_mark_values(api_name, api, max_mark_value, min_mark_value):
     
     api['body']['maxMark'] = max_mark_value
     api['body']['minMark'] = min_mark_value
-    api['body'].pop('fixedMark', None)
+    api['body']['fixedMark'] = None
     
     # Save to user data for persistence
     _save_current_user_data()
@@ -4349,8 +4348,8 @@ def _update_batch_fixed_mark_value(api_name, api, fixed_mark_value):
         api['body'] = {}
 
     api['body']['fixedMark'] = fixed_mark_value
-    api['body'].pop('maxMark', 0)
-    api['body'].pop('minMark', 0)
+    api['body']['maxMark'] = None
+    api['body']['minMark'] = None
 
     _save_current_user_data()
 
@@ -4392,44 +4391,29 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             if f"min_mark_value_{api_name}" not in st.session_state:
                 st.session_state[f"min_mark_value_{api_name}"] = api.get('body', {}).get('minMark', 0)
 
-            col1, col2 = st.columns(2)
+            # Initialize mark mode in session state if not set (default to Random Mark)
+            if f"mark_mode_{api_name}" not in st.session_state:
+                st.session_state[f"mark_mode_{api_name}"] = "Random Mark"
 
+            # Show mark mode selection FIRST (only for SIT environment)
             if current_env == 'SIT':
                 # Mark mode selection (Fixed Mark vs Random Mark)
+                # Radio button automatically manages session state with the key parameter
                 mark_mode = st.radio(
                     "Mark Mode",
-                    ["Fixed Mark", "Random Mark"],
-                    index=0,
+                    ["Random Mark", "Fixed Mark"],
                     key=f"mark_mode_{api_name}",
                     help="Choose Fixed mark for all entries or Random Mark with max/min range."
                 )
             else:
+                # For non-SIT environments, force Random Mark mode
                 mark_mode = "Random Mark"
+                st.info(f"⚠️ Environment '{current_env}' uses Random Mark mode only")
 
-            if mark_mode == "Fixed Mark":
-                with col1:
-                    fixed_mark = st.number_input(
-                        "Fixed Mark",
-                        min_value=0.0,
-                        max_value=100.0,
-                        value=float(st.session_state[f"fixed_mark_value_{api_name}"]),
-                        key=f"fixed_mark_{api_name}",
-                        help="Set one fixed mark value for all batch entries.",
-                        on_change=lambda api_name=api_name, api=api: _update_batch_fixed_mark_value(api_name, api, st.session_state[f"fixed_mark_{api_name}"])
-                    )
+            # Now create columns based on mark mode
+            col1, col2 = st.columns(2)
 
-                with col2:
-                    st.write("")
-
-                # Keep rate values in body for fixed mode - use the actual input value directly
-                if 'body' not in api:
-                    api['body'] = {}
-                api['body']['fixedMark'] = fixed_mark
-                api['body'].pop('maxMark', None)
-                api['body'].pop('minMark', None)
-                st.session_state[f"fixed_mark_value_{api_name}"] = fixed_mark
-
-            else:  # Random Mark mode
+            if mark_mode == "Random Mark":
                 with col1:
                     max_mark = st.number_input(
                         "Max Mark",
@@ -4457,9 +4441,32 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     api['body'] = {}
                 api['body']['maxMark'] = max_mark
                 api['body']['minMark'] = min_mark
-                api['body'].pop('fixedMark', None)
+                api['body']['fixedMark'] = None
                 st.session_state[f"max_mark_value_{api_name}"] = max_mark
                 st.session_state[f"min_mark_value_{api_name}"] = min_mark
+
+            else:  # Fixed Mark mode
+                with col1:
+                    fixed_mark = st.number_input(
+                        "Fixed Mark",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=float(st.session_state[f"fixed_mark_value_{api_name}"]),
+                        key=f"fixed_mark_{api_name}",
+                        help="Set one fixed mark value for all batch entries.",
+                        on_change=lambda api_name=api_name, api=api: _update_batch_fixed_mark_value(api_name, api, st.session_state[f"fixed_mark_{api_name}"])
+                    )
+
+                with col2:
+                    st.write("")
+
+                # Keep rate values in body for fixed mode - use the actual input value directly
+                if 'body' not in api:
+                    api['body'] = {}
+                api['body']['fixedMark'] = fixed_mark
+                api['body']['maxMark'] = None
+                api['body']['minMark'] = None
+                st.session_state[f"fixed_mark_value_{api_name}"] = fixed_mark
 
             st.markdown("---")
             
@@ -4475,6 +4482,9 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 help="Enter Subject Codes separated by new lines or commas. Example:\naaa\nbbb\nccc\nor: aaa, bbb, ccc",
                 placeholder="Enter Subject Codes here...\nExample:\nB34_4\nB34_5"
             )
+            
+            # Get the current value directly from session state
+            subject_ids_input = st.session_state.get(f"subject_ids_{api_name}", "")
             
             # Parse subject IDs
             subject_ids = []
@@ -4507,7 +4517,10 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                 placeholder="Enter StudentIds here...\nExample:\n3fa85f64-5717-4562-b3fc-2c963f66afa1\n3fa85f64-5717-4562-b3fc-2c963f66afa2"
             )
             
-            # Parse subject IDs
+            # Get the current value directly from session state
+            student_ids_input = st.session_state.get(f"student_ids_{api_name}", "")
+            
+            # Parse student IDs
             student_ids = []
             if student_ids_input:
                 # Split by newlines and commas, then clean up
@@ -4532,7 +4545,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             api['body']['semesterId'] = semester_id
 
             # Use the actual input values from the form, not session state fallbacks
-            if st.session_state.get(f"mark_mode_{api_name}", "Fixed Mark") == "Fixed Mark":
+            if mark_mode == "Fixed Mark":
                 # fixedMark is already set above in the Fixed Mark section
                 pass
             else:
@@ -4568,7 +4581,38 @@ It will make 3 API calls:
                 """)
             
             if st.button("🚀 Execute Batch Processing", type="primary", key=f"batch_execute_{api_name}"):
-                _handle_auto_mark_entry_batch(api_name, api, subject_ids, student_ids, file_paths)
+                # Ensure API body has the latest values before batch processing
+                # Re-read from session state to get the most current values
+                current_mark_mode = st.session_state.get(f"mark_mode_{api_name}", "Fixed Mark")
+                
+                if current_mark_mode == "Fixed Mark":
+                    final_fixed_mark = st.session_state.get(f"fixed_mark_value_{api_name}", 50)
+                    api['body']['fixedMark'] = final_fixed_mark
+                    api['body']['maxMark'] = None
+                    api['body']['minMark'] = None
+                else:
+                    final_max_mark = st.session_state.get(f"max_mark_value_{api_name}", 100)
+                    final_min_mark = st.session_state.get(f"min_mark_value_{api_name}", 0)
+                    api['body']['maxMark'] = final_max_mark
+                    api['body']['minMark'] = final_min_mark
+                    api['body']['fixedMark'] = None
+                
+                # Capture the latest subject IDs and student IDs from session state (which are updated by the widgets)
+                latest_subject_ids_input = st.session_state.get(f"subject_ids_{api_name}", "")
+                latest_student_ids_input = st.session_state.get(f"student_ids_{api_name}", "")
+                
+                # Re-parse them to get the current list
+                latest_subject_ids = []
+                if latest_subject_ids_input:
+                    raw_ids = latest_subject_ids_input.replace(',', '\n').split('\n')
+                    latest_subject_ids = [sid.strip() for sid in raw_ids if sid.strip()]
+                
+                latest_student_ids = []
+                if latest_student_ids_input:
+                    raw_ids = latest_student_ids_input.replace(',', '\n').split('\n')
+                    latest_student_ids = [sid.strip() for sid in raw_ids if sid.strip()]
+                
+                _handle_auto_mark_entry_batch(api_name, api, latest_subject_ids, latest_student_ids, file_paths)
         else:
             st.info("💡 Enter Semester ID and at least one Subject Code to enable batch processing")
     
@@ -4669,6 +4713,8 @@ def _handle_auto_mark_entry_batch(api_name, api, subject_ids, student_ids, file_
         batch_api['body'] = batch_api.get('body', {}).copy()
         batch_api['body']['subjectCode'] = subject_id
         batch_api['body']['studentIds'] = student_ids
+        
+        print(f"[DEBUG] Batch call {i} - batch_api['body']: {batch_api['body']}")
         
         try:
             # Load cookies dynamically
@@ -4839,8 +4885,6 @@ def _render_timer_job_body_section(api_name, api):
     # Remove any body content for GET request
     if 'body' in api:
         del api['body']
-    
-    print(f"[DEBUG] Timer Job API config: {api}")
     
     with st.expander("📝 Request Configuration", expanded=False):
         st.write("**Request Method**: GET (no body required)")
@@ -5492,14 +5536,12 @@ def _handle_send_button(api_name, api, file_paths):
             if "{timer_job_id}" in path:
                 timer_job_id = api.get('timer_job_id', 'b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3')
                 path = path.replace("{timer_job_id}", timer_job_id)
-                print(f"[DEBUG] Timer Job - Original path: {api.get('path', api.get('url_path', ''))}")
-                print(f"[DEBUG] Timer Job - Timer ID: {timer_job_id}")
-                print(f"[DEBUG] Timer Job - Final path: {path}")
-                print(f"[DEBUG] Timer Job - Method: {api.get('method', 'GET')}")
             
             # Build full URL
             api['url'] = f"{base_url}{path}"
-            print(f"[DEBUG] Final URL: {api['url']}")
+            
+            # Log the API request being sent
+            print(f"[API REQUEST] {api.get('method', 'GET')} {api['url']}")
             
             # Dynamically load cookies right before sending request
             _load_dynamic_cookies_for_request(api)
@@ -5780,8 +5822,6 @@ def _load_dynamic_cookies_for_request(api):
         user_cookies_config = getattr(st.session_state, 'cookies_config', {})
         user_cookies_string = user_cookies_config.get(current_env, "")
         
-        print(f"[DEBUG] User cookies for {current_env}: '{user_cookies_string[:50]}...'" if user_cookies_string else f"[DEBUG] No user cookies for {current_env}")
-        
         # If user cookies are empty, dynamically load admin cookies
         if not user_cookies_string.strip():
             # Load admin cookies fresh from file
@@ -5789,52 +5829,30 @@ def _load_dynamic_cookies_for_request(api):
             if os.path.exists(ADMIN_COOKIES_FILE):
                 try:
                     admin_cookies = load_api_configs(ADMIN_COOKIES_FILE)
-                    print(f"[DEBUG] Loaded admin cookies from file for envs: {list(admin_cookies.keys())}")
                 except Exception as e:
-                    print(f"[DEBUG] Failed to load admin cookies: {str(e)}")
                     admin_cookies = {}
             
             # Use admin cookies for current environment
             cookies_string = admin_cookies.get(current_env, "")
-            print(f"[DEBUG] Admin cookies for {current_env}: '{cookies_string[:50]}...'" if cookies_string else f"[DEBUG] No admin cookies for {current_env}")
             
             if cookies_string.strip():
                 # Convert cookies string to dictionary format for requests library
                 cookies_dict = cookies_string_to_dict(cookies_string)
                 api['cookies'] = cookies_dict
-                print(f"[DEBUG] Using admin cookies for {current_env}: {len(cookies_dict)} cookies loaded")
-                if cookies_dict:
-                    sample_keys = list(cookies_dict.keys())[:3]
             else:
                 api['cookies'] = {}
-                print(f"[DEBUG] No admin cookies found for {current_env}")
         else:
             # Use user's custom cookies
             cookies_dict = cookies_string_to_dict(user_cookies_string)
             api['cookies'] = cookies_dict
-            print(f"[DEBUG] Using user cookies for {current_env}: {len(cookies_dict)} cookies loaded")
-            if cookies_dict:
-                sample_keys = list(cookies_dict.keys())[:3]
-                print(f"[DEBUG] Sample user cookies keys: {sample_keys}")
     elif cookie_choice == "Custom Cookies":
         # Use custom cookies from the API config
         custom_cookies_string = api.get('custom_cookies_string', '')
         cookies_dict = cookies_string_to_dict(custom_cookies_string)
         api['cookies'] = cookies_dict
-        print(f"[DEBUG] Using custom cookies: {len(cookies_dict)} cookies loaded")
     else:
         # No cookies
         api['cookies'] = {}
-        print("[DEBUG] No cookies configured")
-    
-    # Final verification
-    final_cookies = api.get('cookies', {})
-    if final_cookies:
-        # Show a sample cookie name for verification (not value for security)
-        if final_cookies:
-            first_cookie_name = list(final_cookies.keys())[0]
-    else:
-        print("[DEBUG] ❌ WARNING: No cookies set in API config!")
         
     return api.get('cookies', {})
 
