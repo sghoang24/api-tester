@@ -4588,8 +4588,8 @@ It will make 3 API calls:
                 if current_mark_mode == "Fixed Mark":
                     final_fixed_mark = st.session_state.get(f"fixed_mark_value_{api_name}", 50)
                     api['body']['fixedMark'] = final_fixed_mark
-                    api['body']['maxMark'] = None
-                    api['body']['minMark'] = None
+                    api['body']['maxMark'] = 0
+                    api['body']['minMark'] = 0
                 else:
                     final_max_mark = st.session_state.get(f"max_mark_value_{api_name}", 100)
                     final_min_mark = st.session_state.get(f"min_mark_value_{api_name}", 0)
