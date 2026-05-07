@@ -4395,8 +4395,8 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
             if f"mark_mode_{api_name}" not in st.session_state:
                 st.session_state[f"mark_mode_{api_name}"] = "Random Mark"
 
-            # Show mark mode selection FIRST (only for SIT environment)
-            if current_env == 'SIT':
+            # Show mark mode selection FIRST (for SIT and UAT environments)
+            if current_env in ['SIT', 'UAT']:
                 # Mark mode selection (Fixed Mark vs Random Mark)
                 # Radio button automatically manages session state with the key parameter
                 mark_mode = st.radio(
@@ -4406,7 +4406,7 @@ def _render_auto_mark_entry_section(api_name, api, file_paths):
                     help="Choose Fixed mark for all entries or Random Mark with max/min range."
                 )
             else:
-                # For non-SIT environments, force Random Mark mode
+                # For non-SIT/UAT environments, force Random Mark mode
                 mark_mode = "Random Mark"
                 st.info(f"⚠️ Environment '{current_env}' uses Random Mark mode only")
 
