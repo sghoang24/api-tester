@@ -4,6 +4,8 @@
 
 https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/DEVTimerJob/DEVTriggerTimerJob/b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3
 
+https://admin-tp-esms-sit.dev.edutechonline.org/api/timer/api/TimerTest/runnow?jobType=StandardSchedule__b7c1f0d0-3d15-4d41-bf07-7dfbf9cb15e3_
+
 ## Publish Director List:
 
 https://admin-tp-esms-sit.dev.edutechonline.org/api/assessment/api/v1/DEVTimerJob/DEVTriggerTimerJob/7754ae4b-2dcb-49d3-8525-b83479c32ca3
